@@ -1,0 +1,34 @@
+* SPDX-License-Identifier: Apache-2.0
+v {xschem version=3.4.8RC file_version=1.2}
+G {}
+K {type=subcircuit
+format="@name @pinlist"
+template="name=x1"}
+V {}
+S {}
+E {}
+L 4 -130 -80 130 -80 {}
+L 4 -130 80 130 80 {}
+L 4 -130 -80 -130 80 {}
+L 4 130 -80 130 80 {}
+L 4 -150 -60 -130 -60 {}
+L 4 -150 -30 -130 -30 {}
+L 4 -150 60 -130 60 {}
+L 4 130 -60 150 -60 {}
+L 4 130 -30 150 -30 {}
+L 4 0 -100 0 -80 {}
+L 4 0 80 0 100 {}
+B 5 -152.5 -62.5 -147.5 -57.5 {name=inp dir=in }
+B 5 -152.5 -32.5 -147.5 -27.5 {name=inn dir=in }
+B 5 -152.5 57.5 -147.5 62.5 {name=pbias dir=in }
+B 5 147.5 -62.5 152.5 -57.5 {name=outp dir=out }
+B 5 147.5 -32.5 152.5 -27.5 {name=outn dir=out }
+B 5 -2.5 -102.5 2.5 -97.5 {name=vdd dir=inout }
+B 5 -2.5 97.5 2.5 102.5 {name=vss dir=inout }
+T {@symname} -48 -12 0 0 0.3 0.3 {}
+T {@name} 100 -96 0 0 0.2 0.2 {}
+T {inp} -125 -64 0 0 0.2 0.2 {}
+T {inn} -125 -34 0 0 0.2 0.2 {}
+T {pbias} -125 54 0 0 0.2 0.2 {}
+T {outp} 125 -64 0 1 0.2 0.2 {}
+T {outn} 125 -34 0 1 0.2 0.2 {}

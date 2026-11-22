@@ -1,0 +1,30 @@
+* SPDX-License-Identifier: Apache-2.0
+* Open-loop AC testbench for the two-stage op-amp (design/opamp/opamp_2stage.spice).
+* Measures DC gain, GBW and phase (phase margin = 180 deg + phase at the 0-dB
+* crossing); the DC operating point also gives the supply current.
+*
+* This file is a TEMPLATE: run_corners.sh substitutes __PDK_LIB__, __CORNER__,
+* __TEMP__, __VDDA__ and __DAT__ and runs ngspice on the generated deck, so the
+* same file serves the tt / ss / ff corners.
+.lib __PDK_LIB__ __CORNER__
+.temp __TEMP__
+.include opamp_2stage.spice
+
+vd vdda 0 __VDDA__
+iref pbias 0 DC 60u
+xM9 pbias pbias vdda vdda sky130_fd_pr__pfet_g5v0d10v5 w=20 l=0.5 nf=1
+x1 vinp vinn outp outn vdda 0 pbias opamp_2stage
+
+Vp vinp 0 DC 1.65 AC 0.5u
+Vn vinn 0 DC 1.65 AC -0.5u
+CLp outp 0 16p
+CLn outn 0 16p
+
+.control
+op
+print v(outp) v(outn) i(vd)
+ac dec 20 1 1e9
+let gain = (v(outp)-v(outn))/1u
+wrdata __DAT__ gain
+.endc
+.end

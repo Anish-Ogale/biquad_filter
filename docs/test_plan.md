@@ -1,0 +1,92 @@
+# Test plan — SC biquad (simulation-based prototype, then silicon)
+
+Maps each spec row of `spec/spec.md` to a concrete measurement procedure.
+Simulation benches now; the same procedures are reused on the test chip
+with the equipment listed in §9.
+
+## 1. Frequency response (f0, Q, gain) — all 32 (K, Q) settings
+
+- Multisine input: 10–20 coherent tones spread 0.2·f0 … 3·f0, amplitude
+  200 mVpp total, integer-period record (2^14 samples, Blackman-Harris).
+- Sample the outputs at the phi2 end of each clock period
+  (`sample_per_period` in `sim/behavioral/run_sweep.py`).
+- Least-squares fit of the sampled outputs to the second-order LP/BP
+  z-domain model -> f0, Q, passband gain. Cross-check with the step test (§2).
+- Bench: `sim/behavioral/extract_f0_q.py` (per-tone transient sine runs of
+  `sim/behavioral/biquad_behav.spice`); per-tone results in
+  `results/behav_tones.csv`.
+- Pass: f0 ±1 % typ / ±3 % max; Q ±5 % typ (±15 % for Q ≤ 2, ±20 % above);
+  gain ±0.5 dB typ / ±1 dB max. BP gain is Q-dependent (spec open item §5).
+
+## 2. Step test (fast f0/Q estimator + BIT proxy)
+
+- +/-100 mV differential step; 32–64 clock cycles; extract resonant ring
+  frequency and log decrement from the LP output.
+- This is exactly what the built-in test (docs/architecture.md §7) gives on
+  silicon, so the extraction is shared: the step-ringing f0/Q fit in
+  `sim/behavioral/run_sweep.py` (`bp_peaks` / `fit_fq`).
+
+## 3. THD
+
+- Single coherent sine at f = f0/4, 1 Vpp differential, integer cycles
+  (2^13 samples), first 10 transients discarded.
+- Window: Blackman-Harris; sum harmonics 2–10; report vs fundamental.
+- Both outputs (LP, BP; BP expected worse at high Q).
+- Pass: typ −60 dB / max −50 dB. Corner of concern: 18 dB gain, Q = 5
+  (largest internal swing for the same output THD budget).
+
+## 4. Noise
+
+- ngspice `.noise` is not reliable across switches; use transient noise
+  (`.tran` with `trnoise` sources on switches/op-amp current sources).
+- Band 0.1 Hz–50 kHz integrated; input-referred and output-referred both
+  reported; also supply-noise coupling sanity (VDDA ripple 100 mV @ 1 kHz ->
+  output).
+- Pass: 150 µVrms typ / 400 µVrms max. Note the PDK mismatch gating caveat
+  (spec §2): flicker corner models are engaged but Vth-mismatch MC is off —
+  manual Pelgrom compensation, labelled [SIM+MC-manual].
+
+## 5. Offset
+
+- Behavioral: force 5 mV input-referred offset (VOS parameter on the
+  behavioral op-amps), measure LP/BP output DC across the full gain × Q
+  matrix.  Bench: `python3 sim/behavioral/run_sweep.py --mode offset`
+  (single committed deck: `sim/behavioral/offset_test.spice`).
+  Replay with sign reversal.
+- Transistor-level: op-amp offset from 3-corner OP + manual Pelgrom spread,
+  propagated [SCALED] through the worst-case SC offset-gain factors from the
+  behavioral test.
+- Pass: max ±30 mV (0 dB, Q ≤ 2, all K); max ±60 mV (all gain/Q).
+
+## 6. Supply current
+
+- Average IDDA over ≥ 32 clock periods at fclk = 1 MHz, K = 25 (highest
+  switching activity), including clock loaders' charge.
+- Pass: 0.8 mA typ / 1.5 mA max. IDDD: [ESTIMATE] only (no digital logic).
+
+## 7. Supply and temperature
+
+- This study: behavioral biquad at tt/27 °C with op-amp parameters swept to
+  emulate PVT; transistor-level op-amp at tt/27 °C, ss/2.97 V/110 °C,
+  ff/3.63 V/−40 °C.
+- Post-layout commitment: full tt/ss/ff/sf/fs × (2.97, 3.3, 3.63 V) ×
+  (−40, 27, 110 °C) grid on the extracted netlist, plus MC.
+
+## 8. Charge injection / clock feedthrough
+
+- Transient with ideal clocks but real TG switches: measure output kick per
+  clock edge at zero input; compare phi1e vs plain phi1 bottom-plate timing.
+- Pass: 5 mVpp typ / 20 mVpp max.
+
+## 9. Equipment (silicon phase)
+
+| Measurement | Equipment |
+|---|---|
+| Frequency response | Audio precision analyzer or DAQ + low-distortion source ( behavioural multisine equivalent) |
+| Step / BIT | Scope ≥ 12 bit, or digitizer; internal BIT square wave |
+| THD | Audio analyzer (THD < −100 dB floor) or FFT analyzer |
+| Noise | Low-noise preamp + 24-bit ADC, band 0.1 Hz–50 kHz |
+| Offset / CM | 6½-digit DMM on output lines |
+| Supply current | Precision ammeter / source-measure unit |
+| Clocks | Function generator, 0–3.3 V logic into fclk pin |
+| Temperature | Thermal stream/chuck, −40 … +110 °C |

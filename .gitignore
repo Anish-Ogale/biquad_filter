@@ -1,0 +1,27 @@
+# Raw simulator output -- commit figures, not data
+*.raw
+*.dat
+*.csv
+*.log
+*.json
+*.pyc
+__pycache__/
+
+# ngspice / xschem temporary artifacts
+*.spice.raw
+*.constant
+*.print
+*.measure
+
+# Editor / OS files
+*~
+*.swp
+.idea/
+.vscode/
+.DS_Store
+
+# generated corner decks
+design/opamp/tb_*_*.gen.spice
+design/opamp/tb_*_*.dat
+sim/behavioral/*.dat
+sim/behavioral/*.log

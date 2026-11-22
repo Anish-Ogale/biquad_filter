@@ -1,0 +1,144 @@
+* SPDX-License-Identifier: Apache-2.0
+* Offset test deck: behavioral SC biquad at K = 100, Q = 5, fclk = 500 kHz,
+* zero differential input, 5 mV input-referred op-amp offset (both op-amps).
+* The measured DC outputs approximate the worst-case output offset
+* (spec/spec.md: max 30 mV at 0 dB / Q <= 2, 60 mV over all settings).
+* Gain settings are covered by invariance: the input attenuator is a
+* capacitive divider with no DC path into the summing nodes, so the offset
+* map is gain-invariant (docs/architecture.md).  [SIM]
+* Full (K, Q, offset-sign) wrapper: python3 sim/behavioral/run_sweep.py --mode offset
+* This committed deck alone runs with:  ngspice -b sim/behavioral/offset_test.spice
+* (ngspice quirk: device values that are parameters MUST be braced, e.g.
+* `C11 a b {CI}` -- unbraced gives a silent 0 F capacitor.)
+
+* --- parameter block (rewritten by the run scripts) ---
+.param VCM=1.65
+.param VDD=3.3
+.param fclk=500000
+.param T=1/fclk
+.param CI=8p
+.param Cs=0.507688p
+.param Cd=0.133791p
+.param Ron=1000
+.param A0=1000
+.param GBW=1e+07
+.param SR=5e+06
+.param VOS=0.005
+.param CCOMP=1p
+.param PIVAL=3.141592653589793
+.param GMAMP=2*PIVAL*GBW*CCOMP
+.param RAMP=A0/GMAMP
+.param IMAXP=SR*CCOMP
+.param DUTY=0.45
+.param GUARD=0.05
+.param AMP=0.05
+.param TSTEP=0.0001
+
+* ideal non-overlapping clocks (phi1 45% duty, 5% guard gap)
+Vclk1 clk1 0 PULSE(0 3.3 0 1n 1n {DUTY*T} {T})
+Vclk2 clk2 0 PULSE(0 3.3 {(DUTY+GUARD)*T} 1n 1n {DUTY*T} {T})
+Vcm vcm 0 {VCM}
+
+* step stimulus (default).  extract_f0_q.py rewrites this line to
+* Vsig sig 0 SIN(0 {AMP} {FSIG})
+Vsig sig 0 0
+Bip vinp 0 V = VCM + V(sig)
+Bin vinn 0 V = VCM - V(sig)
+
+* ---- op-amp 1 (BP integrator) ----
+Bd1 vd1 0 V = V(x1p)-V(x1n) + VOS
+Bg1 0 n1 I = max(min(GMAMP*V(vd1), IMAXP), -IMAXP) - V(n1)/RAMP
+Ccomp1 n1 0 {CCOMP}
+Boutp1 bpp 0 V = max(min(VCM - 0.5*V(n1), VDD-0.05), 0.05)
+Boutn1 bpn 0 V = max(min(VCM + 0.5*V(n1), VDD-0.05), 0.05)
+
+* ---- op-amp 2 (LP integrator) ----
+Bd2 vd2 0 V = V(x2p)-V(x2n) + VOS
+Bg2 0 n2 I = max(min(GMAMP*V(vd2), IMAXP), -IMAXP) - V(n2)/RAMP
+Ccomp2 n2 0 {CCOMP}
+Boutp2 lpp 0 V = max(min(VCM - 0.5*V(n2), VDD-0.05), 0.05)
+Boutn2 lpn 0 V = max(min(VCM + 0.5*V(n2), VDD-0.05), 0.05)
+
+* common-mode hold on the virtual grounds (1 Gohm to VCM).
+* The behavioral op-amp only senses the differential input, so without
+* these the input CM is undetermined and the DC solve puts it at 0 V.
+Rcm_x1p x1p vcm 1e9
+Rcm_x1n x1n vcm 1e9
+Rcm_x2p x2p vcm 1e9
+Rcm_x2n x2n vcm 1e9
+
+* integrator feedback caps
+C11 x1p bpp {CI}
+C12 x1n bpn {CI}
+C21 x2p lpp {CI}
+C22 x2n lpn {CI}
+
+* Every input branch is a true double-plate sampling network:
+*   phi1: cap charges between its source and VCM (op-amp side open)
+*   phi2: source side goes to VCM, op-amp side connects to the
+*         summing node -- the sampled charge is dumped into CI.
+* Keeping the op-amp-side plate permanently attached (an earlier
+* version) makes the net charge transfer per cycle exactly zero.
+
+* Cs1: input -> BP integrator (straight)
+C31 a1p s1p {Cs}
+C32 a1n s1n {Cs}
+S_a1p a1p x1p clk2 0 SW1
+S_a1n a1n x1n clk2 0 SW1
+S_b1p a1p vcm clk1 0 SW1
+S_b1n a1n vcm clk1 0 SW1
+S31 s1p vinp clk1 0 SW1
+S32 s1n vinn clk1 0 SW1
+S33 s1p vcm clk2 0 SW1
+S34 s1n vcm clk2 0 SW1
+
+* Cs2: BP -> LP, CROSS-coupled (p side samples bpn on phi1)
+C41 a2p s2p {Cs}
+C42 a2n s2n {Cs}
+S_a2p a2p x2p clk2 0 SW1
+S_a2n a2n x2n clk2 0 SW1
+S_b2p a2p vcm clk1 0 SW1
+S_b2n a2n vcm clk1 0 SW1
+S41 s2p bpn clk1 0 SW1
+S42 s2n bpp clk1 0 SW1
+S43 s2p vcm clk2 0 SW1
+S44 s2n vcm clk2 0 SW1
+
+* Cs3: LP -> BP, straight (p side samples lpp on phi1)
+C51 a3p s3p {Cs}
+C52 a3n s3n {Cs}
+S_a3p a3p x1p clk2 0 SW1
+S_a3n a3n x1n clk2 0 SW1
+S_b3p a3p vcm clk1 0 SW1
+S_b3n a3n vcm clk1 0 SW1
+S51 s3p lpp clk1 0 SW1
+S52 s3n lpn clk1 0 SW1
+S53 s3p vcm clk2 0 SW1
+S54 s3n vcm clk2 0 SW1
+
+* Cd: switched damping.  phi2: in parallel with CI1 (plates at
+* x1 and BP output); phi1: both plates shorted to VCM.  During
+* phi2 the charge stored on CI(CI+Cd)/(CI) splits CI:Cd, giving
+* exactly the 1/(1+Cd/CI) factor of the discrete map.
+C61 gd1p sd1p {Cd}
+C62 gd1n sd1n {Cd}
+S_gd1p gd1p x1p clk2 0 SW1
+S_gd1n gd1n x1n clk2 0 SW1
+S_hd1p gd1p vcm clk1 0 SW1
+S_hd1n gd1n vcm clk1 0 SW1
+S_wd1p sd1p bpp clk2 0 SW1
+S_wd1n sd1n bpn clk2 0 SW1
+S_xd1p sd1p vcm clk1 0 SW1
+S_xd1n sd1n vcm clk1 0 SW1
+
+.model SW1 SW vt=1.65 vh=0 ron={Ron} roff=1e12
+
+.options reltol=1e-4 abstol=1e-13 vntol=1e-7 rshunt=1e15
+.tran 2e-08 0.001404
+.save v(lpp) v(lpn) v(bpp) v(bpn) v(vinp) v(vinn)
+.control
+run
+set wr_singlescale
+wrdata offset_test.dat v(lpp) v(lpn) v(bpp) v(bpn) v(vinp) v(vinn)
+.endc
+.end
