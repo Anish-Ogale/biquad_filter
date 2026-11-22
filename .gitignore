@@ -20,8 +20,10 @@ __pycache__/
 .vscode/
 .DS_Store
 
-# generated corner decks
-design/opamp/tb_*_*.gen.spice
-design/opamp/tb_*_*.dat
+# generated simulation decks and data
+design/opamp/*.gen.spice
+design/opamp/*.dat
+design/opamp/*.log
+sim/behavioral/*.gen.spice
 sim/behavioral/*.dat
 sim/behavioral/*.log

@@ -8,8 +8,8 @@ is the frozen baseline for schematics and simulation; numbers come from
 
 ```
                     0/6/12/18 dB            +---------+  BP (band-pass)
-  VINP/VINN ---> [ input capacitive  ] ---> |  INT 1  | ------------+--->
-                    attenuator (2-bit)      | Cs1,Cs3 |      |      |
+  VINP/VINN ---> [ gain branch Cs1 ] -----> |  INT 1  | ------------+--->
+                    = G*Cs (2-bit)          | Cs1,Cs3 |      |      |
                                             | Cd, CI1 |   [Cs2 x-couple]
                                             +---------+      v
                                                  ^      +---------+
@@ -30,20 +30,28 @@ is the frozen baseline for schematics and simulation; numbers come from
   inverting, corrected by an output-wire swap.
 - Both integrators: two-phase SC inverting integrators, sample on phi1,
   integrate on phi2 (one full clock period of loop delay).
-- Gain is applied entirely in the input attenuator, so f0, Q, offset gain
-  Structure and noise floor are gain-independent.
+- Gain is applied only by scaling the input-branch capacitor,
+  `Cs1 = G*Cs` (G = 1, 2, 3.98, 7.94).  Cs2, Cs3, Cd and CI are unchanged,
+  so f0 and Q are gain-independent.  The LP DC gain is G and the BP peak
+  gain is G*Q; the output offset is **not** assumed gain-independent and is
+  simulated at 0 dB and 18 dB.
 
 ## 2. Capacitor-ratio equations (exact LDI z-domain)
 
 State update over one full clock period (single-ended half circuit):
 
 ```
-b[n] = ( b[n-1] + a*v[n] + a*l[n-1] ) / (1 + a_d)     BP  (INT1 out)
+b[n] = ( b[n-1] + G*a*v[n] + a*l[n-1] ) / (1 + a_d)   BP  (INT1 out)
 l[n] =   l[n-1] - a*b[n-1]                            LP  (INT2 out)
 
-a   = Cs / CI      (Cs = Cs1 = Cs2 = Cs3, switched input caps)
-a_d = Cd / CI      (switched damping cap, INT 1 only)
+a     = Cs / CI    (Cs2 = Cs3 = Cs, loop caps)
+G*a   = Cs1 / CI   (Cs1 = G*Cs, input-branch gain cap)
+a_d   = Cd / CI    (switched damping cap, INT 1 only)
 ```
+
+At DC this gives LP gain = G and BP peak gain = G*Q; f0 and Q depend only
+on the loop ratios `a` and `a_d`, so the 0/6/12/18 dB settings do not move
+the poles.
 
 Exact design for resonance f0 = fclk/K and quality factor Q (NOT the
 2*pi/K small-angle approximation, which errs up to +26 % at K = 25, Q = 0.5):
@@ -53,13 +61,13 @@ theta = 2*pi/K
 r     = exp(-theta/(2*Q))
 u     = 2*r*cos(theta) - 1          ; must be > 0  (stability/steps)
 a_d   = 1/u - 1                     ; damping ratio Cd/CI
-a     = sqrt(r*r/u - 1)             ; input ratio Cs/CI
+a     = sqrt(r*r/u - 1)             ; loop ratio Cs/CI
 ```
 
 Derived cap values with CI = 8 pF (recommended; see results/capbudget_table.md):
 
 ```
-Cs = a*CI          Cd = a_d*CI
+Cs  = a*CI         Cd = a_d*CI         Cs1 = G*Cs
 ```
 
 Worst-case damping cap: K = 200, Q = 5 -> Cd = 50 fF (0.4 % of CI, still
@@ -92,8 +100,9 @@ Every input branch capacitor has **both plates switched**:
 
 An earlier draft of the
 schematic kept the op-amp-side plate tied to the summing node permanently;
-that wiring transfers zero net charge (proven in `results/behav_validation.md`)
-and must not be resurrected.
+that wiring transfers zero net charge (verified in the behavioral deck,
+`sim/behavioral/biquad_behav.spice`; results in `results/summary.md`) and must
+not be resurrected.
 
 ## 4. Clock phases (ideal in this study)
 
@@ -107,8 +116,8 @@ number silently corrupts the phase).
 
 | Signal | Pins | Direction | Notes |
 |---|---:|---|---|
-| VINP / VINN | 2 (shared analog) | in | +/-1 V differential max, VCM = 1.65 V |
-| VOUT_LP / VOUT_BP | 2 (shared analog) | out | differential, +/-1 V swing |
+| VINP / VINN | 2 (shared analog) | in | usable differential input = ±1 V / G (G = 1, 2, 3.98, 7.94); VCM = 1.65 V |
+| VOUTP / VOUTN | 2 (shared analog) | out | LP and BP share these lines, selected by OUT_SEL; ±1 V differential swing |
 | fclk | 1 | in | 10 kHz–1 MHz (K = 25 limits fclk <= 500 kHz) |
 | test enable | 1 | in | routes built-in square wave to the input |
 | VDDA / VSSA | 2 | supply | 3.3 V nominal (2.97–3.63), 5 V devices |
@@ -120,7 +129,7 @@ number silently corrupts the phase).
 |---:|---|---|
 | 2 | clock division K | 25, 50, 100, 200 |
 | 3 | Q | 0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0, 5.0 |
-| 2 | gain (input attenuator) | 0, 6, 12, 18 dB |
+| 2 | gain (input-branch cap Cs1 = G*Cs) | 0, 6, 12, 18 dB |
 | 2 | built-in test divider | fclk/64, /256, /1024, /4096 |
 | 1 | test input enable | on/off |
 | 1 | power-down | active low assumed |
@@ -139,7 +148,7 @@ above are the arrays `sim/capbudget.py` prices.
 
 - Internal relaxation oscillator generates a square wave at fclk/64, /256,
   /1024, or /4096 (2-bit divider + enable), amplitude ≈ ±0.25 V differential,
-  driven to the input attenuator.
+  driven to the input gain branch.
 - Purpose: lets the tester measure f0/Q with a slow, ample square wave and a
   scope/spectrum analyzer without an external low-distortion source: LP output
   rings at damped resonance (frequency -> f0, log-decrement -> Q), BP shows
@@ -152,7 +161,7 @@ above are the arrays `sim/capbudget.py` prices.
 
 - Ideal 0/3.3 V clocks (5 % guard, 10 % early phase); no clock jitter.
 - Op-amp: PMOS-input two-stage Miller, algebraic CMFB (soft tanh clamp);
-  transistor-level characterization in `results/opamp_char.md`.
+  transistor-level characterization in `results/opamp_corners.md`.
 - PDK mismatch is OFF in stock corners (MC_MM_SWITCH undefined; 5 V
   vth0_slope = 0). Offset/noise MC results add a manual Pelgrom Vth term and
   are labelled [SIM+MC-manual].

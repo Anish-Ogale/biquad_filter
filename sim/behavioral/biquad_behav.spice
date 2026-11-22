@@ -29,11 +29,13 @@
 .param CI=8p
 .param Cs=1.171636p
 .param Cd=1.265774p
+.param GAIN=1
 .param Ron=1000
 .param A0=1000
 .param GBW=1e+07
 .param SR=5e+06
 .param VOS=0
+.param VOS2=0
 .param CCOMP=1p
 .param PIVAL=3.141592653589793
 .param GMAMP=2*PIVAL*GBW*CCOMP
@@ -63,7 +65,7 @@ Boutp1 bpp 0 V = max(min(VCM - 0.5*V(n1), VDD-0.05), 0.05)
 Boutn1 bpn 0 V = max(min(VCM + 0.5*V(n1), VDD-0.05), 0.05)
 
 * ---- op-amp 2 (LP integrator) ----
-Bd2 vd2 0 V = V(x2p)-V(x2n) + VOS
+Bd2 vd2 0 V = V(x2p)-V(x2n) + VOS2
 Bg2 0 n2 I = max(min(GMAMP*V(vd2), IMAXP), -IMAXP) - V(n2)/RAMP
 Ccomp2 n2 0 {CCOMP}
 Boutp2 lpp 0 V = max(min(VCM - 0.5*V(n2), VDD-0.05), 0.05)
@@ -90,9 +92,11 @@ C22 x2n lpn {CI}
 * Keeping the op-amp-side plate permanently attached (an earlier
 * version) makes the net charge transfer per cycle exactly zero.
 
-* Cs1: input -> BP integrator (straight)
-C31 a1p s1p {Cs}
-C32 a1n s1n {Cs}
+* Cs1: input -> BP integrator (straight).  Only this input branch is
+* scaled by GAIN (LP DC gain = GAIN; BP peak gain = GAIN*Q).  Cs2/Cs3 and
+* the integrator/damping caps are unchanged so f0 and Q stay fixed.
+C31 a1p s1p {GAIN*Cs}
+C32 a1n s1n {GAIN*Cs}
 S_a1p a1p x1p clk2 0 SW1
 S_a1n a1n x1n clk2 0 SW1
 S_b1p a1p vcm clk1 0 SW1

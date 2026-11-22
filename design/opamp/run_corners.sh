@@ -5,16 +5,26 @@
 #   tb_step.spice -> integrator step settling + output noise
 # Writes results/opamp_corners.md.
 #
-# Requires ngspice on PATH and PDK_ROOT (default ~/.volare). Each ngspice
-# invocation spends ~10 s loading Sky130 models; total runtime ~2 min.
+# Requires ngspice on PATH and PDK_ROOT (default ~/.volare). PDK_ROOT may
+# point either to the directory containing sky130A or to sky130A itself.
+# Each ngspice invocation spends ~10 s loading Sky130 models; total runtime
+# ~2 min.
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RESULTS="$(cd "$HERE/../.." && pwd)/results"
 PDK_ROOT="${PDK_ROOT:-$HOME/.volare}"
 PDK="${PDK:-sky130A}"
-LIB="$PDK_ROOT/$PDK/libs.tech/ngspice/sky130.lib.spice"
+if [ -f "$PDK_ROOT/libs.tech/ngspice/sky130.lib.spice" ]; then
+  LIB="$PDK_ROOT/libs.tech/ngspice/sky130.lib.spice"
+else
+  LIB="$PDK_ROOT/$PDK/libs.tech/ngspice/sky130.lib.spice"
+fi
 
-[ -f "$LIB" ] || { echo "ERROR: $LIB not found (set PDK_ROOT)" >&2; exit 1; }
+[ -f "$LIB" ] || {
+  echo "ERROR: Sky130 ngspice library not found under PDK_ROOT=$PDK_ROOT" >&2
+  echo "Set PDK_ROOT to the directory containing $PDK, or to $PDK itself." >&2
+  exit 1
+}
 command -v ngspice >/dev/null || { echo "ERROR: ngspice not on PATH" >&2; exit 1; }
 mkdir -p "$RESULTS"
 
@@ -102,7 +112,8 @@ for line in $CORNERS; do
   if [ -f "$dat" ]; then
     read -r g0 gbw pm <<< "$(parse_ac "$dat")"
     idd=$(parse_log_value "$HERE/tb_ac_${cname}.log" "i\(vd\)[^0-9-]*([-0-9.eE+]+)")
-    idd_uA=$(python3 -c "print(f'{float(\"$idd\")*1e6:.0f}')" 2>/dev/null || echo na)
+    # i(vd) is negative by SPICE current sign convention; report |Idd|.
+    idd_uA=$(python3 -c "print(f'{abs(float(\"$idd\"))*1e6:.0f}')" 2>/dev/null || echo na)
     echo "| $cname | $g0 | $gbw | $pm | $idd_uA |"
   else
     echo "| $cname | FAIL | | | |"
@@ -110,29 +121,35 @@ for line in $CORNERS; do
   rm -f "$dat"
 done
 echo
-echo "## tb_step: integrator settling and differential output noise"
+echo "## tb_step: integrator settling"
 echo
-echo "| corner | tau ns | settle 0.1% ns | inoise uVrms |"
-echo "|---|---:|---:|---:|"
+echo "| corner | tau ns | settle 0.1% ns |"
+echo "|---|---:|---:|"
 for line in $CORNERS; do
   IFS='|' read -r cname sect temp vdda <<< "$line"
   gen_deck "$HERE/tb_step.spice" "$cname" "$sect" "$temp" "$vdda" step
   run_tb "$cname" step
   dat="$HERE/tb_step_${cname}.dat"
-  inz=$(parse_log_value "$HERE/tb_step_${cname}.log" "inoise_total\s*=\s*([-0-9.eE+]+)")
-  inz_uV=$(python3 -c "print(f'{float(\"$inz\")*1e6:.1f}')" 2>/dev/null || echo na)
   if [ -f "$dat" ]; then
     read -r tau t01 <<< "$(parse_step "$dat")"
-    echo "| $cname | $tau | $t01 | $inz_uV |"
+    echo "| $cname | $tau | $t01 |"
   else
-    echo "| $cname | FAIL | | $inz_uV |"
+    echo "| $cname | FAIL | |"
   fi
   rm -f "$dat"
 done
 echo
-echo "Targets: gain >= 60 dB, GBW >= 10 MHz (CL = 5 pF eff), PM >= 60 deg,"
-echo "Idd <= 250 uA. Note: the shipped v3 netlist measures ~578 uA Idd at tt"
-echo "and ~50 dB A0; see results/spec_check.md for the revised targets."
+echo "The tb_step noise analysis is not reported as a system noise result."
+echo "The system output-noise figure is the [EST] sampled kT/C budget in"
+echo "results/spec_check.md and results/capbudget_table.md."
+echo
+echo "Targets in this proposal: A0 >= 50 dB minimum (80 dB goal), GBW >= 10 MHz"
+echo "(CL = 5 pF eff), PM >= 45 deg. tt/ff meet the 50 dB and 10 MHz bars;"
+echo "ss (49.0 dB, 7.82 MHz) misses both. The behavioral sweep at 18 dB gain"
+echo "requires A0 >= 60 dB and GBW >= 5 MHz, including the 18 dB Q<=2 row"
+echo "(results/q2check.md); all three transistor corners are below 60 dB A0."
+echo "System IDDA is tracked against the adopted 1.3 / 2.0 mA"
+echo "typ/max budget in results/spec_check.md."
 } > "$RESULTS/opamp_corners.md"
 
 rm -f "$HERE"/tb_*_*.gen.spice

@@ -18,8 +18,8 @@ ideal 0/3.3 V sources, control settings are netlist parameters.
 
 | Pin | Type | Notes |
 |---|---|---|
-| VINP / VINN | shared analog lines 1–2 | differential input, ±1 V max, VCM ≈ 1.65 V |
-| VOUTP / VOUTN | shared analog lines 3–4 | LP **and** BP outputs share these two lines, selected by OUT_SEL; ±1 V differential |
+| VINP / VINN | shared analog lines 1–2 | differential input; usable range = ±1 V / G for ±1 V differential output, VCM ≈ 1.65 V |
+| VOUTP / VOUTN | shared analog lines 3–4 | LP **and** BP outputs share these two lines, selected by OUT_SEL; ±1 V differential swing; usable input = ±1 V / G |
 | CLK_IN | **dedicated digital pad** | fclk, 0–1.8 V logic into a level-tolerant buffer (prototype assumes ideal 0/3.3 V) |
 | IREF | shared analog (bias) | bias reference from the harness |
 | STATUS[3:0] | test outputs | of the 12 test-output resources, 4 used: clock monitor, BIT divider monitor, 2 spare |
@@ -33,7 +33,7 @@ Total: 4 shared analog lines (audio-band only), 1 dedicated digital pad,
 |---|---:|---|
 | K_SEL | 2 | 00: K=25, 01: K=50, 10: K=100, 11: K=200 (f0 = fclk/K) |
 | Q_SEL | 3 | 8 √2-spaced steps: 0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0, 5.0 |
-| GAIN_SEL | 2 | 00: 0 dB, 01: 6 dB, 10: 12 dB, 11: 18 dB (input attenuator) |
+| GAIN_SEL | 2 | 00: 0 dB, 01: 6 dB, 10: 12 dB, 11: 18 dB (input-branch cap Cs1 = G*Cs) |
 | OUT_SEL | 1 | 0: LP on VOUTP/N, 1: BP (or both where routing allows) |
 | SELF_BIAS | 1 | 1: internal bias replica runs, harness IREF unused |
 | BIAS_TRIM | 3 | op-amp bias current trim (±3 steps around nominal) |

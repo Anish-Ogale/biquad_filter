@@ -10,18 +10,26 @@ Corners per spec/corners.md; the prototype runs tt / ss@110C / ff@-40C only.
 
 | corner | A0 dB | GBW MHz | PM deg | Idd uA |
 |---|---:|---:|---:|---:|
-| tt | 50.0 | 10.60 | 56.3 | -578 |
-| ss_110C | 49.0 | 7.82 | 52.1 | -485 |
-| ff_m40C | 50.5 | 13.94 | 61.6 | -687 |
+| tt | 50.0 | 10.60 | 56.3 | 578 |
+| ss_110C | 49.0 | 7.82 | 52.1 | 485 |
+| ff_m40C | 50.5 | 13.94 | 61.6 | 687 |
 
-## tb_step: integrator settling and differential output noise
+## tb_step: integrator settling
 
-| corner | tau ns | settle 0.1% ns | inoise uVrms |
-|---|---:|---:|---:|
-| tt | 10 | 72 | 339.8 |
-| ss_110C | 15 | 102 | 350.1 |
-| ff_m40C | 5 | 35 | 327.2 |
+| corner | tau ns | settle 0.1% ns |
+|---|---:|---:|
+| tt | 10 | 72 |
+| ss_110C | 15 | 102 |
+| ff_m40C | 5 | 35 |
 
-Targets: gain >= 60 dB, GBW >= 10 MHz (CL = 5 pF eff), PM >= 60 deg,
-Idd <= 250 uA. Note: the shipped v3 netlist measures ~578 uA Idd at tt
-and ~50 dB A0; see results/spec_check.md for the revised targets.
+The tb_step noise analysis is not reported as a system noise result.
+The system output-noise figure is the [EST] sampled kT/C budget in
+results/spec_check.md and results/capbudget_table.md.
+
+Targets in this proposal: A0 >= 50 dB minimum (80 dB goal), GBW >= 10 MHz
+(CL = 5 pF eff), PM >= 45 deg. tt/ff meet the 50 dB and 10 MHz bars;
+ss (49.0 dB, 7.82 MHz) misses both. The behavioral sweep at 18 dB gain
+requires A0 >= 60 dB and GBW >= 5 MHz, including the 18 dB Q<=2 row
+(results/q2check.md); all three transistor corners are below 60 dB A0.
+System IDDA is tracked against the adopted 1.3 / 2.0 mA
+typ/max budget in results/spec_check.md.

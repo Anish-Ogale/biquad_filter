@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Project-local xschem configuration for the op-amp schematic.
+#
+# Xschem reads this file automatically when it is started from the repository
+# root, so:
+#
+#     cd <repository>
+#     xschem design/opamp/opamp_2stage.sch
+#
+# The Sky130 PDK is located through PDK_ROOT (the directory that contains
+# sky130A), with ~/.volare used as a convenience fallback.  The stock xschem
+# device symbols (devices/lab_pin.sym, devices/capa.sym, ...) are kept on the
+# search path so the schematic works with a standard xschem installation.
+
+# --- locate the Sky130 xschem symbol library -------------------------------
+if {[info exists env(PDK_ROOT)] && $env(PDK_ROOT) ne ""} {
+    set sc_pdk_root $env(PDK_ROOT)
+} else {
+    set sc_pdk_root $env(HOME)/.volare
+    puts stderr "xschemrc: PDK_ROOT is not set; trying $sc_pdk_root"
+}
+
+set sc_sky130_xschem ""
+foreach sc_candidate [list \
+        $sc_pdk_root/sky130A/libs.tech/xschem \
+        $sc_pdk_root/libs.tech/xschem] {
+    if {[file isdirectory $sc_candidate]} {
+        set sc_sky130_xschem $sc_candidate
+        break
+    }
+}
+
+if {$sc_sky130_xschem eq ""} {
+    puts stderr "xschemrc: Sky130 xschem symbols not found under $sc_pdk_root."
+    puts stderr "xschemrc: set PDK_ROOT to the directory containing sky130A."
+} else {
+    puts stderr "xschemrc: using Sky130 xschem symbols from $sc_sky130_xschem"
+}
+
+# --- library search path ---------------------------------------------------
+# Keep the stock xschem device library, then add the Sky130 library.
+set XSCHEM_LIBRARY_PATH {}
+if {[info exists XSCHEM_SHAREDIR]} {
+    append XSCHEM_LIBRARY_PATH :$XSCHEM_SHAREDIR/xschem_library/devices
+    append XSCHEM_LIBRARY_PATH :$XSCHEM_SHAREDIR/xschem_library
+}
+append XSCHEM_LIBRARY_PATH :$env(HOME)/.xschem/xschem_library
+if {$sc_sky130_xschem ne ""} {
+    append XSCHEM_LIBRARY_PATH :$sc_sky130_xschem
+}
+
+# Keeps the schematic window readable when opened from this repository.
+set XSCHEM_START_WINDOW {}

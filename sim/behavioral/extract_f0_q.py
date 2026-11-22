@@ -62,24 +62,24 @@ def fit_sine(t, y, f, extra_harm=0):
                 rms_resid=float(np.sqrt(np.mean(resid ** 2))))
 
 
-def H_lp(theta, a, a_d, w):
+def H_lp(theta, a, a_d, w, gain=1.0):
     """Exact LP transfer function of the discrete map at w (rad/sample)."""
     M = np.array([[1.0 / (1.0 + a_d), a / (1.0 + a_d)],
                   [-a, 1.0]])
-    Bv = np.array([a / (1.0 + a_d), 0.0])
+    Bv = np.array([gain * a / (1.0 + a_d), 0.0])
     H = np.linalg.solve(np.array([[np.exp(1j * w) - M[0, 0], -M[0, 1]],
                                   [-M[1, 0], np.exp(1j * w) - M[1, 1]]]), Bv)
     return H[1]
 
 
-def fit_f0_q(f0_guess, Q_guess, fclk, tones, gains):
+def fit_f0_q(f0_guess, Q_guess, fclk, tones, gains, gain_scale=1.0):
     """Grid fit of (f0, Q) to the measured tone gains (linear magnitude)."""
     fs = np.array(tones)
     gv = np.array(gains)
     th0 = 2 * math.pi * f0_guess / fclk
     wv = 2 * math.pi * fs / fclk
     best = (1e99, None)
-    for r in np.linspace(0.55, 0.995, 891):
+    for r in np.linspace(0.55, 0.9995, 1201):
         ths = np.linspace(th0 * 0.90, th0 * 1.10, 401)
         u = 2 * r * np.cos(ths) - 1.0
         ok = u > 0
@@ -92,7 +92,8 @@ def fit_f0_q(f0_guess, Q_guess, fclk, tones, gains):
         a = np.sqrt(arg[ok2])
         ad = 1.0 / u - 1.0
         for th, aa, add in zip(ths, a, ad):
-            hv = np.array([abs(H_lp(th, aa, add, w)) for w in wv])
+            hv = np.array([abs(H_lp(th, aa, add, w, gain_scale))
+                              for w in wv])
             err = float(np.sum((hv - gv) ** 2))
             if err < best[0]:
                 best = (err, (th, r, aa, add))
@@ -164,6 +165,7 @@ def main():
     Q = float(argv[argv.index('--Q') + 1]) if '--Q' in argv else 5.0
     fclk = float(argv[argv.index('--fclk') + 1]) if '--fclk' in argv else 500e3
     ntones = int(argv[argv.index('--ntones') + 1]) if '--ntones' in argv else 10
+    gain = float(argv[argv.index('--gain') + 1]) if '--gain' in argv else 1.0
     amp = 0.01  # per tone; 10 tones x 10 mV keeps the input well inside +-1 V
 
     f0_tgt = fclk / K
@@ -230,7 +232,8 @@ def main():
 
     if len(rows) >= 3:
         fit = fit_f0_q(f0_tgt, Q, fclk, [r['f'] for r in rows],
-                       [10 ** (r['gain_l_dB'] / 20) for r in rows])
+                       [10 ** (r['gain_l_dB'] / 20) for r in rows],
+                       gain_scale=gain)
         print(f"\nLP fit: f0 = {fit['f0']:.1f} Hz (target {f0_tgt:.1f}, "
               f"{100 * (fit['f0'] - f0_tgt) / f0_tgt:+.2f}%), "
               f"Q = {fit['Q']:.3f} (target {Q:g}, "

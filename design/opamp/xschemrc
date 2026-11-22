@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Allow xschem to be started from this directory as well:
+#     cd design/opamp
+#     xschem opamp_2stage.sch
+#
+# The real configuration (PDK_ROOT lookup, Sky130 and stock symbol paths)
+# lives in the repository-root xschemrc.
+
+set sc_local_dir [file dirname [info script]]
+source [file normalize [file join $sc_local_dir .. .. xschemrc]]

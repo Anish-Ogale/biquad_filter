@@ -5,7 +5,7 @@ Challenge #4 review gates (Chip Foundry schedule):
 | Gate | Date | Deliverable expected |
 |---|---|---|
 | Proposal | 2026-11-23 | This feasibility study + spec (spec/spec.md) |
-| **Schematic review** | week of **2026-12-28** | complete xschem schematics: biquad, attenuator, bias, test support, pins; pass conceptual review |
+| **Schematic review** | week of **2026-12-28** | complete xschem schematics: biquad, input gain branch, bias, test support, pins; pass conceptual review |
 | **Layout review** | week of **2027-02-01** | full layout, DRC/LVS clean, floorplan within 0.12 mm² |
 | **Final submission** | week of **2027-02-22** | extracted simulation results over PVT, final report |
 
@@ -20,7 +20,7 @@ Single-team effort; owners to be assigned at M1. Proposal (M0) complete.
       schematic, netlist-equivalence-verified) at 3 corners — all in `results/`.
 
 ### M1 — Schematic-complete (schematic review, week of 2026-12-28)
-1. xschem: input attenuator + biquad core (double-plate switching per
+1. xschem: input gain cap bank + biquad core (double-plate switching per
    docs/architecture.md §3), op-amp (done, `design/opamp/`), bias block
    (60 µA replica), non-overlap clock generator + level interfaces, BIT
    oscillator/divider, I/O assignment.
@@ -51,7 +51,7 @@ under layout parasitics; clock feedthrough through substrate.
 
 | # | Risk | Impact | Mitigation / status |
 |---|---|---|---|
-| 1 | Op-amp A0 ≈ 50 dB is near the 316× behavioral floor | Q accuracy at Q = 5 drifts a few % | characterized [SIM]; if transistor-level biquad shows Q err beyond typ, add a gain boost (cascode or longer-L), costs headroom — decide at M1 |
+| 1 | Op-amp A0 is 49.0–50.5 dB; the 18 dB-gain sweep needs A0 ≥60 dB | ss misses 50 dB/10 MHz; Q error is −11…−12 % at 18 dB/K=100/Q=5 and 5.0–6.3 % for Q≤2 at 18 dB | characterized [SIM]; A0=60 dB brings Q≤2 inside 5 % (`q2check.md`); improve A0 to ≥60 dB (cascode or longer-L) or qualify only 0/6/12 dB at ss — decide at M1 |
 | 2 | No 3.3 V PMOS in Sky130 | levels/complexity | 5 V CMOS everywhere on the analog side (frozen) |
 | 3 | PDK mismatch models disabled (MC_MM_SWITCH, vth0_slope=0) | offset/noise MC optimistic | manual Pelgrom Vth + MiM 2.8 %/√WL Python MC; disclosed in every spec-check row it touches |
 | 4 | Offset at 18 dB / Q = 5 | worst-case ±60 mV row | behavioral offset test across all settings (python3 sim/behavioral/run_sweep.py --mode offset) |
@@ -59,5 +59,5 @@ under layout parasitics; clock feedthrough through substrate.
 | 6 | Charge injection / clock feedthrough | clock feedthrough 5/20 mVpp rows | double-plate + early phase; quantify at M1 with transistor-level switches |
 | 7 | Fast schedule (schematic gate 5 weeks after proposal) | review readiness | scope frozen to the 24-hour-critical-path subset; full PVT deferred to M3 |
 | 8 | ngspice-47 + sky130 corner lib quirks (subckt OP basins, hsa B-source parsing, clock pulse units, NFET bulk) | wasted simulation cycles | all traps documented in results/summary.md "toolchain notes" and encoded in the generators |
-| 9 | f0 typ ±1 % fails at K=200/Q≥2.83 by quantization alone (+0.93…+1.24 %) | one spec row FAIL at proposal time | measured [ANALYTICAL]; proposal: split typ ±1 % (K≤100) / ±1.5 % (K=200), or fine-trim priority for f0 — needs user sign-off (spec_check.md §revised) |
-| 10 | IDDA typ 0.8 mA vs measured 1.22 mA (2×op-amp + replica) | spec row FAIL at typ; ff corner 1.43 mA is at 95 % of the 1.5 mA max | measured [SIM]; proposal: typ 1.2 mA, or post-acceptance class-AB second stage / bias mode scaling with fclk |
+| 9 | f0 typ at K=200/Q≥2.83 is +0.93…+1.24 % by quantization | would fail the old ±1 % typ | measured [ANALYTICAL]; adopted typ **±1 % (K≤100) / ±1.5 % (K=200)**, max ±3 % (`spec_check.md`); f0-priority trim is an optional fallback |
+| 10 | IDDA 1.22 mA typ at tt (2×op-amp + replica); ff ≈1.43 mA | old 0.8/1.5 mA spec was too tight | measured [SIM]; adopted **1.3 mA typ / 2.0 mA max at 1 MHz**, excluding output buffers, bias, CMFB and clock generation (`spec_check.md`) |

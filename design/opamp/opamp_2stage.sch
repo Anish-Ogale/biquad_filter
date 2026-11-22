@@ -250,7 +250,7 @@ lab=outn
 C {devices/lab_pin.sym} 365 -2120 0 0 {name=lp_M6n_B
 lab=vdd
 }
-C {/usr/local/share/xschem/xschem_library/devices/capa.sym} 900 -200 0 0 {name=Cc1
+C {devices/capa.sym} 900 -200 0 0 {name=Cc1
 value=5p
 }
 C {devices/lab_pin.sym} 900 -280 0 0 {name=lp_Cc1_p
@@ -259,7 +259,7 @@ lab=a
 C {devices/lab_pin.sym} 900 -120 0 0 {name=lp_Cc1_m
 lab=mid1
 }
-C {/usr/local/share/xschem/xschem_library/devices/res.sym} 900 -440 0 0 {name=Rz1
+C {devices/res.sym} 900 -440 0 0 {name=Rz1
 value=550
 }
 C {devices/lab_pin.sym} 900 -520 0 0 {name=lp_Rz1_P
@@ -268,7 +268,7 @@ lab=mid1
 C {devices/lab_pin.sym} 900 -360 0 0 {name=lp_Rz1_M
 lab=outp
 }
-C {/usr/local/share/xschem/xschem_library/devices/capa.sym} 900 -680 0 0 {name=Cc2
+C {devices/capa.sym} 900 -680 0 0 {name=Cc2
 value=5p
 }
 C {devices/lab_pin.sym} 900 -760 0 0 {name=lp_Cc2_p
@@ -277,7 +277,7 @@ lab=b
 C {devices/lab_pin.sym} 900 -600 0 0 {name=lp_Cc2_m
 lab=mid2
 }
-C {/usr/local/share/xschem/xschem_library/devices/res.sym} 900 -920 0 0 {name=Rz2
+C {devices/res.sym} 900 -920 0 0 {name=Rz2
 value=550
 }
 C {devices/lab_pin.sym} 900 -1000 0 0 {name=lp_Rz2_P
@@ -286,7 +286,7 @@ lab=mid2
 C {devices/lab_pin.sym} 900 -840 0 0 {name=lp_Rz2_M
 lab=outn
 }
-C {/usr/local/share/xschem/xschem_library/devices/vsource.sym} 1200 -1160 0 0 {name=Vcmref
+C {devices/vsource.sym} 1200 -1160 0 0 {name=Vcmref
 value=1.65
 }
 C {devices/lab_pin.sym} 1200 -1240 0 0 {name=lp_Vcmref_p
@@ -295,7 +295,7 @@ lab=vcmref
 C {devices/lab_pin.sym} 1200 -1080 0 0 {name=lp_Vcmref_m
 lab=0
 }
-C {/usr/local/share/xschem/xschem_library/devices/bsource.sym} 1200 -1400 0 0 {name=Bavg
+C {devices/bsource.sym} 1200 -1400 0 0 {name=Bavg
 VAR=V FUNC="'0.5*(v(outp)+v(outn))'"
 }
 C {devices/lab_pin.sym} 1200 -1480 0 0 {name=lp_Bavg_p
@@ -304,7 +304,7 @@ lab=vcm_s
 C {devices/lab_pin.sym} 1200 -1320 0 0 {name=lp_Bavg_m
 lab=0
 }
-C {/usr/local/share/xschem/xschem_library/devices/bsource.sym} 1200 -1640 0 0 {name=Bcmfb
+C {devices/bsource.sym} 1200 -1640 0 0 {name=Bcmfb
 VAR=V FUNC="'1.65 + tanh(0.2 + 20*(v(vcm_s) - v(vcmref)))'"
 }
 C {devices/lab_pin.sym} 1200 -1720 0 0 {name=lp_Bcmfb_p
@@ -316,42 +316,21 @@ lab=0
 C {devices/ipin.sym} 1600 600 0 0 {name=pp_inp
 lab=inp
 }
-C {devices/lab_pin.sym} 1660 600 0 0 {name=lpx_inp
-lab=inp
-}
 C {devices/ipin.sym} 1600 540 0 0 {name=pp_inn
-lab=inn
-}
-C {devices/lab_pin.sym} 1660 540 0 0 {name=lpx_inn
 lab=inn
 }
 C {devices/opin.sym} 1600 480 0 0 {name=pp_outp
 lab=outp
 }
-C {devices/lab_pin.sym} 1660 480 0 0 {name=lpx_outp
-lab=outp
-}
 C {devices/opin.sym} 1600 420 0 0 {name=pp_outn
-lab=outn
-}
-C {devices/lab_pin.sym} 1660 420 0 0 {name=lpx_outn
 lab=outn
 }
 C {devices/iopin.sym} 1600 360 0 0 {name=pp_vdd
 lab=vdd
 }
-C {devices/lab_pin.sym} 1660 360 0 0 {name=lpx_vdd
-lab=vdd
-}
 C {devices/iopin.sym} 1600 300 0 0 {name=pp_vss
 lab=vss
 }
-C {devices/lab_pin.sym} 1660 300 0 0 {name=lpx_vss
-lab=vss
-}
 C {devices/ipin.sym} 1600 240 0 0 {name=pp_pbias
-lab=pbias
-}
-C {devices/lab_pin.sym} 1660 240 0 0 {name=lpx_pbias
 lab=pbias
 }

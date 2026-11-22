@@ -1,39 +1,72 @@
 # Spec check — pre-layout prototype scope
 
 Date 2026-11-22. Verdicts: **PASS** (meets spec), **WITHIN 20 %** (within
-20 % of the limit), **FAIL** (outside). Scope reminder: behavioral + op-amp
-level only; transistor-level SC filter = post-acceptance. Labels:
-**[SIM]** ngspice, **[ANALYTICAL]** exact z-domain / closed form,
-**[EST]** estimate. Full details in `results/summary.md`.
+20 % of the limit), **FAIL** (measured/analytical result outside the limit),
+**NOT YET MEASURED** / **PLANNED — POST ACCEPTANCE** (no design claim made).
+Scope reminder: behavioral + op-amp level only; the transistor-level SC filter
+is post-acceptance. Labels: **[SIM]** ngspice, **[ANALYTICAL]** exact z-domain
+/ closed form, **[EST]** estimate. Full details in `results/summary.md`.
+CSV evidence (`behav_sweep.csv`, `gain_test.csv`, `behav_tones.csv`,
+`offset_test.csv`, `offset_opamp.csv`) is optional generated detail from
+`make behav` and is intentionally not committed. The values and conclusions
+in this table and in `results/summary.md` are the committed evidence and do
+not require those CSV files to be present.
 
 | # | Spec (typ / max) | Simulated / estimated value | Verdict | Evidence |
 |---|---|---|---|---|
-| 1 | f0 accuracy ±1 % / ±3 %, all (K,Q) | Quantization worst **+1.24 %** at K=200/Q=5, ≤0.93 % everywhere else [ANALYTICAL]; MiM 1σ adds ≤0.25 % (K=200) | typ **FAIL** at K=200/Q≥2.83 (+24 % over limit), PASS elsewhere; max **PASS** (worst ~1.5 %, inc. 1σ) | `results/capbudget_table.md` `f0_quant_err_pct`, `sigma_mim_pct`; f0 extract [SIM] +0.30 % at K=100/Q=5 (multisine, results/behav_tones.csv); ±0.00 % in the gain/GBW sweep (results/behav_sweep.csv) |
-| 2 | Q accuracy ±5 % typ; ±15 % max (Q≤2), ±20 % max (Q>2) | Quantization ≤0.98 % [ANALYTICAL]; behavioral: step-ringing fit +4.2 % residual at K=100/Q=5 for every op-amp setting [SIM]; multisine fit −3.36 % Q err same setting [SIM]; worst measured |Q err| 4.3 % | typ: Q≤2 **PASS**; Q>2 **PASS** (worst 4.3 % of the 20 % budget), residual flagged for transistor-level re-measure; max: **PASS** | results/behav_sweep.csv; results/capbudget_table.md `Q_quant_err_pct` |
-| 3 | Gain error ±0.5 / ±1 dB | ≤0.007 dB across the A0 × GBW sweep (worst −0.024 dB at A0=40 dB) [SIM]; attenuator makes gain independent of f0/Q (docs/architecture §8) | **PASS** | behav_sweep A0 table |
-| 4 | THD −60 / −50 dB @ 1 Vpp diff, f=f0/4 | Not simulated at prototype scope (needs transistor-level switches+op-amp) | **FAIL (not measured)** — planned | Post-acceptance work item |
-| 5 | Output noise 150 typ / 400 max µVrms (0.1 Hz–50 kHz) | **70–80 µVrms** kT/C + op-amp budget [EST] (analytical; sum of sampled kT/C of CI/Cs/Cd at CI=8 pF, 2× noise bandwidth) | typ **PASS** (est.); noise sim planned before quoting max | analytical estimate [EST]; transient noise sim planned |
-| 6 | Output offset ±30 mV (0 dB, Q≤2) / ±60 mV (all settings), incl. 5 mV op-amp offset | **11.6 mV** worst (Q≤2); **23.6 mV** worst (all settings, K=200/Q=5) [SIM], VOS = +5 mV on both op-amps same polarity (worst case), settled beyond 50× envelope decay | **PASS** (both rows) | results/offset_test.md, results/plots/fig_offset_map_tt.png |
-| 7 | Clock feedthrough 5 typ / 20 max mVpp | Not measured (needs switch charge-injection, transistor level) | **FAIL (not measured)** — planned | Post-acceptance; early-phase bottom-plate sampling mitigates |
-| 8 | IDDA @1 MHz, 0.8 typ / 1.5 max mA | 2 × 578 µA + 60 µA replica = **1.22 mA typ** (tt, 3.3 V); ss: ~1.02 mA; ff: ~1.43 mA [SIM, op-amp corners ×2] | typ **FAIL** (+52 %); max **PASS** (ff at 95 % of limit — marginal) | results/opamp_corners.md |
-| 9 | IDDD 40 typ / 100 max µA | Clock generation out of prototype scope (external clocks assumed); est. < 40 µA for gate booking [EST] | n/a — planned | architecture.md I/O |
-| 10 | Area ≤ 0.12 mm² | MiM caps: **max 0.0351 mm²** across all 32 (K,Q) settings at CI=8 pF [ANALYTICAL]; switches/routing not in prototype scope | **PASS** (caps use 29 % of area spec) | results/capbudget_table.md |
+| 1 | f0 accuracy ±1 % (K≤100), ±1.5 % (K=200) typ / ±3 % max | Quantization worst **+1.24 %** at K=200/Q=5, ≤0.93 % everywhere else [ANALYTICAL]; MiM 1σ adds ≤0.25 % (K=200) | typ **PASS** against adopted spec (1.24 < 1.5 at K=200; ≤0.93 < 1 at K≤100); max **PASS** (worst ~1.5 %, inc. 1σ) | `results/capbudget_table.md` `f0_quant_err_pct`, `sigma_mim_pct`; f0 extract [SIM] +0.30 % at K=100/Q=5 (multisine, results/behav_tones.csv, generated); ±0.00 % in the gain/GBW sweep (results/behav_sweep.csv, generated) |
+| 2 | Q accuracy ±5 % typ; ±15 % max (Q≤2), ±20 % max (Q>2) | Quantization ≤0.98 % [ANALYTICAL]; ideal 80 dB/10 MHz step gives +4.2 % at K=100/Q=5 and multisine −3.36 %; at 18 dB the real tt/ss op-amps give −11.2/−11.9 % at K=100/Q=5, and K=200/Q=5 gives −14.8/−15.1 % even ideal [SIM]. Q≤2 at 18 dB: 5.0–6.3 % differential at the 49–50 dB corners, but only 1.9 % worst at A0=60 dB (GBW 7.82–20 MHz) | Q≤2 typ **PASS with A0 ≥ 60 dB** (1.9 % < 5 %); at the current 49–50 dB corners it misses at 18 dB (worst 6.3 %). Q>2 max **PASS** (worst 15.1 % < 20 %), but the Q±5 % typ row is not met at 18 dB or K=200/Q=5 | `results/behav_sweep.md`, `results/gain_test.md`, `results/qcheck.md`, `results/q2check.md`, `results/capbudget_table.md` |
+| 3 | Gain error ±0.5 / ±1 dB | Gain by input-branch cap `Cs1 = G*Cs` at 0/6/12/18 dB, ideal/tt/ss op-amp sets; worst **0.060 dB** over K=100/Q=5 and K=25/Q=1 [SIM] | **PASS** typ (0.060 < 0.5 dB) | `results/gain_test.md`; `results/gain_test.csv` (generated) |
+| 4 | THD −60 / −50 dB at 1 Vpp differential at LP output, f=f0/4 | Not simulated at prototype scope (needs transistor-level switches+op-amp) | **NOT YET MEASURED — PLANNED, POST ACCEPTANCE** | THD bench added with the transistor-level biquad |
+| 5 | Output noise 150 typ / 400 max µVrms (0.1 Hz–50 kHz) | **66.7 µVrms** at 0 dB / **87.2 µVrms** at 18 dB worst, sampled kT/C only [EST] | typ **PASS** (est.); max **PASS** (est.); transient noise simulation still planned | `results/capbudget_table.md`; method: both halves of Cs1/Cs2/Cs3/Cd/CI, power-summed; excludes 1/f, op-amp, feedthrough |
+| 6 | Output offset max ±40 mV (0 dB, Q≤2, all K); max ±60 mV (all gain/Q), assumed 5 mV op-amp input offset | **29.4 mV** worst at 0 dB/Q≤2/all K; **45.5 mV** over all gain/Q [SIM, baseline 60 dB]. Real tt/ss worst cases 35.3/34.0 mV; ideal 80 dB worst 53.5 mV. Measured offset gain ≈5.9x/9.1x | **PASS** both adopted max rows (29.4 < 40, 45.5 < 60); real/ideal checks also within max | `results/offset_test.md`; `results/offset_opamp.md`; CSVs generated |
+| 7 | Clock feedthrough 5 typ / 20 max mVpp | Not measured (needs switch charge-injection, transistor level) | **NOT YET MEASURED — PLANNED, POST ACCEPTANCE** | Early-phase bottom-plate sampling is the planned mitigation; quantify with transistor-level switches |
+| 8 | IDDA @1 MHz, 1.3 typ / 2.0 max mA | 2 × 578 µA + 60 µA replica = **1.22 mA typ** (tt, 3.3 V); ss: ~1.02 mA; ff: ~1.43 mA [SIM, op-amp corners ×2] | typ **PASS** (1.22 < 1.3); max **PASS** (1.43 < 2.0) | results/opamp_corners.md |
+| 9 | IDDD 40 typ / 100 max µA | Clock generation out of prototype scope (external clocks assumed); est. < 40 µA for gate booking [EST] | **PLANNED — POST ACCEPTANCE** (digital logic not implemented) | architecture.md I/O |
+| 10 | Area ≤ 0.12 mm² | MiM caps: **max 0.0585 mm²** at 18 dB across all 32 (K,Q) settings at CI=8 pF [ANALYTICAL]; total cap 33.6–68.7 pF at 0 dB / 37.2–117.6 pF at 18 dB (≤120 pF target). **MiM only; switches, op-amps, bias and routing are not included.** | **PASS** (MiM caps use 49 % of area spec) | results/capbudget_table.md |
 | 11 | MiM caps only | All caps are `cap_mim` (2.0 fF/µm² + 0.19 fF/µm perimeter, density checked) | **PASS** | capbudget.py mim_area |
-| 12 | Op-amp: A0 ≥ 300 (50 dB) min, 80 dB target; GBW ≥ 10 MHz; PM ≥ 45° | **A0 = 50 dB (316×)**, GBW 10.6 MHz, PM 56.3°, Idd 578 µA (tt) [SIM]. A0 is at the minimum bar, not the 80 dB target | **WITHIN 20 %** of goal; A0 shortfall documented as known v3 limitation | results/opamp_corners.md, results/behav_sweep.csv |
+| 12 | Op-amp: A0 ≥ 50 dB min, 80 dB target; GBW ≥ 10 MHz; PM ≥ 45° | tt 50.0 dB/10.6 MHz, ss 49.0 dB/7.82 MHz, ff 50.5 dB/13.94 MHz; PM 52.1–61.6°, Idd 485–687 µA [SIM]. Behavioral sweep at 18 dB requires A0 ≥60 dB and GBW ≥5 MHz for all three cases, including Q≤2. | **ss FAIL both 50 dB A0 and 10 MHz GBW minimums**; tt/ff PASS those bars. **All three FAIL the 60 dB A0 needed at 18 dB**; PM PASS; **80 dB goal NOT MET** | `results/opamp_corners.md`, `results/behav_sweep.md`, `results/q2check.md` |
 
-## Specs revised (proposals — user sign-off required, nothing relaxed silently)
+## Adopted specification adjustments (based on preliminary simulation)
 
-1. **f0 typ accuracy at K=200, Q≥2.83**: measured +0.93…+1.24 % vs ±1 %.
-   Proposal: keep max ±3 %; split typ — ±1 % for K≤100, **±1.5 % for K=200**;
-   alternatively re-quantize with the fine trim prioritized for f0 (Cs at
-   K=200/Q=5 sits 1.2 % above ideal = within one 1/8-unit trim step; a trim
-   sweep verifying a recovered typ is planned, not yet run).
-2. **IDDA typ**: measured 1.22 mA vs 0.8 mA. Proposal: typ **1.2 mA**,
-   keep max 1.5 mA (ff corner simulates 1.43 mA — only 4.7 % margin; if the
-   challenge demands more, cut Cc to 4 pF → GBW 13 MHz, Idd −15 %, PM −5°… −50°:
-   rejected, PM floor). Alternative: class-AB second stage (post-acceptance).
-3. **Q>2 typ budget**: no revision needed (4.2 % of 20 %), but the +4.2 %
-   systematic residual must be re-measured at transistor level before the
-   proposal quotes typ ±5 %…±20 % Q accuracy as settled.
-4. **THD / noise / feedthrough**: spec rows retained unchanged; marked
-   "not measured at prototype scope" rather than revised.
+These changes are now treated as the working specification for this proposal.
+They are reported with the measured value that motivated each change; no
+requirement was relaxed without being listed here.
+
+1. **f0 typ accuracy**: adopted **±1 % for K≤100 and ±1.5 % for K=200**, max
+   stays ±3 %. Measured quantization is +1.24 % at K=200/Q=5 and ≤0.93 %
+   for K≤100 [ANALYTICAL].
+2. **IDDA**: adopted **1.3 mA typ / 2.0 mA max at fclk = 1 MHz**. Measured
+   tt = 1.22 mA, ss ≈ 1.02 mA, ff ≈ 1.43 mA [SIM, op-amp ×2 + replica].
+   The 2.0 mA max is stated excluding output buffers, bias, CMFB and clock
+   generation.
+3. **Q accuracy at K=200/Q=5**: no spec relaxation. The ideal 80 dB /
+   10 MHz behavioral point still gives Q −14.8 % (0 dB) and −15.1 %
+   (18 dB), inside the Q>2 max ±20 % but not the Q±5 % used in the op-amp
+   requirement sweep. Re-measure at transistor level.
+4. **THD / noise / feedthrough**: THD condition is now **1 Vpp differential
+   at the LP output, f = f0/4**. THD and clock feedthrough remain
+   **NOT YET MEASURED**. The kT/C-only noise estimate is 66.7 µVrms at 0 dB
+   and 87.2 µVrms at 18 dB worst [EST]; transient noise simulation remains
+   planned.
+5. **Output offset**: adopted **max ±40 mV** (0 dB, Q≤2, all K) and
+   **max ±60 mV** (all gain/Q), both for an assumed 5 mV op-amp input offset.
+   Measured baseline is 29.4 mV / 45.5 mV, corresponding to offset gains of
+   about **5.9x** and **9.1x**. Real tt/ss worst cases are 35.3/34.0 mV; the
+   ideal 80 dB case is 53.5 mV. Planned: manual Pelgrom estimate of the real
+   5 V input-pair offset and re-derive the spec from it [EST].
+6. **Cap budget**: adopted **≤120 pF** target and **0.12 mm² MiM area** spec.
+   Computed totals are 33.6–68.7 pF at 0 dB and 37.2–117.6 pF at 18 dB;
+   worst MiM area is 0.0585 mm². The area number is MiM capacitance only;
+   switches, op-amps, bias and routing are not included.
+7. **Op-amp A0 / GBW**: no relaxed spec. tt/ff meet the 50 dB and 10 MHz
+   minimums, but ss is 49.0 dB / 7.82 MHz and misses both. All three
+   transistor corners are below the 60 dB A0 needed by the 18 dB-gain
+   behavioral requirement. This is an identified implementation/improvement
+   item, not a spec change.
+8. **Q ≤ 2 at 18 dB**: no spec relaxation. With the current 49–50 dB
+   corners the worst differential Q error is 6.3 % (K=200/Q=2), outside the
+   ±5 % typ row. The targeted A0/GBW check in `results/q2check.md` shows
+   **1.9 % worst at A0 = 60 dB**, almost independent of GBW from 7.82 to
+   20 MHz. The existing A0 ≥ 60 dB requirement therefore also covers this
+   row; the transistor op-amp must be improved as in item 7.
