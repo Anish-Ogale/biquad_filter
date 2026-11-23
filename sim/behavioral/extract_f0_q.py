@@ -10,7 +10,7 @@ frequency response is measured from transients.  Two modes:
         per-tone least-squares fit y(t) = A cos(wt) + B sin(wt) + C over the
         settled tail of the record gives gain and phase per tone, and a 2-D
         grid fit of the exact z-domain transfer function gives f0 and Q.
-        This is the prototype flow (results/behav_tones.csv).
+        This is the prototype flow (results/data/behav_tones.csv).
   tones  The same, but one transient run per tone ("about 20 transient sine
         tones"); slower (one ngspice run per tone) but independent points.
 
@@ -32,6 +32,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.join(HERE, '..', '..', 'results')
+DATA = os.path.join(RESULTS, 'data')
 sys.path.insert(0, os.path.join(HERE, '..'))
 from capbudget import design_exact  # noqa: E402
 
@@ -238,12 +239,12 @@ def main():
               f"{100 * (fit['f0'] - f0_tgt) / f0_tgt:+.2f}%), "
               f"Q = {fit['Q']:.3f} (target {Q:g}, "
               f"{100 * (fit['Q'] - Q) / Q:+.2f}%)", flush=True)
-    os.makedirs(RESULTS, exist_ok=True)
-    with open(os.path.join(RESULTS, 'behav_tones.csv'), 'w', newline='') as f:
+    os.makedirs(DATA, exist_ok=True)
+    with open(os.path.join(DATA, 'behav_tones.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, list(rows[0].keys()) if rows else ['f'])
         w.writeheader()
         w.writerows(rows)
-    print(f"wrote results/behav_tones.csv ({len(rows)} tones)", flush=True)
+    print(f"wrote results/data/behav_tones.csv ({len(rows)} tones)", flush=True)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ same-case A0=80 dB / GBW=20 MHz baseline.  Differential Q error is used so
 the step-ring extraction bias cancels.
 
 Run:  python3 sim/behavioral/q2_check.py
-Out:  results/q2check.{csv,md}
+Out:  results/data/q2check.csv, q2check.fragment.md
 """
 import csv
 import math
@@ -18,6 +18,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.abspath(os.path.join(HERE, '..', '..', 'results'))
+DATA = os.path.join(RESULTS, 'data')
 sys.path.insert(0, HERE)
 
 import run_sweep as rs  # noqa: E402
@@ -36,7 +37,7 @@ def runtime(K):
 
 
 def main():
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     rows = []
     print('== Q<=2 requirement at 18 dB: A0 x GBW, baseline 80 dB/20 MHz ==',
           flush=True)
@@ -68,7 +69,7 @@ def main():
     keys = ['case', 'K', 'Q', 'gain_db', 'A0_dB', 'GBW_MHz', 'Q_ext',
             'Q_base', 'Q_diff_err_pct', 'Q_abs_err_pct', 'f0_err_pct',
             'pass_5pct']
-    with open(os.path.join(RESULTS, 'q2check.csv'), 'w', newline='') as f:
+    with open(os.path.join(DATA, 'q2check.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         w.writerows(rows)
@@ -78,9 +79,9 @@ def main():
     worst_60 = max((abs(r['Q_diff_err_pct']) for r in rows
                     if r['A0_dB'] == 60.0))
     worst_60_gbw = min(r['GBW_MHz'] for r in rows if r['A0_dB'] == 60.0)
-    with open(os.path.join(RESULTS, 'q2check.md'), 'w') as f:
-        f.write('# Q <= 2 at 18 dB gain: A0 / GBW requirement check\n\n')
-        f.write('Targeted follow-up to `results/qcheck.md`. Same behavioral '
+    with open(os.path.join(DATA, 'q2check.fragment.md'), 'w') as f:
+        f.write('## (b) Q <= 2 at 18 dB gain: A0 / GBW requirement check\n\n')
+        f.write('Targeted follow-up to section (a). Same behavioral '
                 'deck, step-ring extraction and 18 dB input-branch gain as the '
                 'Q check. Differential Q error is referenced to the same-case '
                 'ideal op-amp baseline at **A0 = 80 dB, GBW = 20 MHz**, which '
@@ -97,7 +98,7 @@ def main():
                     f"{r['Q_abs_err_pct']:+.2f} | "
                     f"{r['f0_err_pct']:+.2f} | "
                     f"{'yes' if r['pass_5pct'] else 'no'} |\n")
-        f.write('\n## Conclusion\n\n')
+        f.write('\n### Conclusion\n\n')
         f.write(f'At A0 = 50 dB (the tt/ss transistor-corner level) the worst '
                 f'Q <= 2 differential error at 18 dB is **{worst_50:.2f} %**, '
                 f'outside the 5 % typ row. Raising A0 to **60 dB** reduces '
@@ -107,7 +108,7 @@ def main():
                 f'The existing op-amp requirement **A0 >= 60 dB** already '
                 f'covers Q <= 2 at 18 dB; no extra Q <= 2 relaxation or '
                 f'K/Q limit is needed.\n')
-    print(f"wrote results/q2check.{{csv,md}} ({len(rows)} rows)", flush=True)
+    print(f"wrote results/data/q2check.csv and the q2check fragment ({len(rows)} rows)", flush=True)
 
 
 if __name__ == '__main__':

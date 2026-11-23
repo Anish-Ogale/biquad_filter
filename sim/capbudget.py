@@ -19,7 +19,7 @@ Outputs, for each K in {25,50,100,200} and Q in the 8 sqrt2-spaced steps
     quantized f0/Q exceeding typ spec, u<=0 (no solution)
 
 Run:   python3 sim/capbudget.py [--ci 8e-12]
-Out:   results/capbudget_table.csv, results/capbudget_table.md
+Out:   results/capbudget_table.md, results/data/capbudget_table.csv
 """
 import argparse, csv, math, os, sys
 
@@ -235,7 +235,9 @@ def main():
             'bp_peak_gain_0dB', 'bp_peak_gain_18dB',
             'total_cap_pF', 'total_cap_pF_18dB', 'total_area_mm2',
             'total_area_mm2_18dB', 'flags']
-    csvp = os.path.join(args.out, 'capbudget_table.csv')
+    datadir = os.path.join(args.out, 'data')
+    os.makedirs(datadir, exist_ok=True)
+    csvp = os.path.join(datadir, 'capbudget_table.csv')
     with open(csvp, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=cols + ['error'])
         w.writeheader()

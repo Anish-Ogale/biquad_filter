@@ -1,6 +1,6 @@
 # Offset test - 5 mV input-referred op-amp offset
 
-Behavioral biquad (ideal switches), zero differential input, fclk = 500 kHz, A0 = 60 dB (deck default), GBW = 10 MHz. Both op-amps have a 5 mV input-referred offset; same-sign is (+5,+5) mV and opposite-sign is (+5,-5) mV. Gain is the input-branch cap Cs1 = G*Cs (G = 1 and 7.94, i.e. 0 and 18 dB). Real tt/ss worst cases are in results/offset_opamp.md. [SIM]
+Behavioral biquad (ideal switches), zero differential input, fclk = 500 kHz, A0 = 60 dB (deck default), GBW = 10 MHz. Both op-amps have a 5 mV input-referred offset; same-sign is (+5,+5) mV and opposite-sign is (+5,-5) mV. Gain is the input-branch cap Cs1 = G*Cs (G = 1 and 7.94, i.e. 0 and 18 dB). Real tt/ss worst cases are in results/behavioral/offset_opamp.md. [SIM]
 
 `rail` is 1 when the settled differential output exceeded +/-1.55 V; such a row is invalid and is excluded from the worst-case summary. No row is silently clipped.
 

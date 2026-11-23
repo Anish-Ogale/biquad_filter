@@ -11,9 +11,10 @@ Challenge #4 review gates (Chip Foundry schedule):
 
 ## Milestones
 
-Single-team effort; owners to be assigned at M1. Proposal (M0) complete.
+Two-person team (analog filter owner, DLL owner is a separate
+project); owners per milestone assigned at M1. Proposal (M0) complete.
 
-### M0 — Proposal (done 2026-11-23)
+### M0 — Proposal (completed with the proposal submission)
 - [x] Toolchain audit, exact z-domain model, cap budget, behavioral biquad
       validated against the z-model, behavioral op-amp requirement sweep,
       offset test across all gain/Q, transistor-level op-amp (xschem
@@ -51,7 +52,7 @@ under layout parasitics; clock feedthrough through substrate.
 
 | # | Risk | Impact | Mitigation / status |
 |---|---|---|---|
-| 1 | Op-amp A0 is 49.0–50.5 dB; the 18 dB-gain sweep needs A0 ≥60 dB | ss misses 50 dB/10 MHz; Q error is −11…−12 % at 18 dB/K=100/Q=5 and 5.0–6.3 % for Q≤2 at 18 dB | characterized [SIM]; A0=60 dB brings Q≤2 inside 5 % (`q2check.md`); improve A0 to ≥60 dB (cascode or longer-L) or qualify only 0/6/12 dB at ss — decide at M1 |
+| 1 | Op-amp A0 is 49.0–50.5 dB; the 18 dB-gain sweep needs A0 ≥60 dB | ss misses 50 dB/10 MHz; Q error is −11…−12 % at 18 dB/K=100/Q=5 and 5.0–6.3 % for Q≤2 at 18 dB | characterized [SIM]; A0=60 dB brings Q≤2 inside 5 % (`results/behavioral/q_evidence.md` section b); improve A0 to ≥60 dB (cascode or longer-L) or qualify only 0/6/12 dB at ss — decide at M1 |
 | 2 | No 3.3 V PMOS in Sky130 | levels/complexity | 5 V CMOS everywhere on the analog side (frozen) |
 | 3 | PDK mismatch models disabled (MC_MM_SWITCH, vth0_slope=0) | offset/noise MC optimistic | manual Pelgrom Vth + MiM 2.8 %/√WL Python MC; disclosed in every spec-check row it touches |
 | 4 | Offset at 18 dB / Q = 5 | worst-case ±60 mV row | behavioral offset test across all settings (python3 sim/behavioral/run_sweep.py --mode offset) |

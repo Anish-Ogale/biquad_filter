@@ -11,24 +11,24 @@ Modes
           sensitivity), sweeping DC gain 40-80 dB and GBW 3-20 MHz; extracts
           f0/Q from the BP step-ringing and the LP DC gain from the settled
           tail, and reports the minimum op-amp keeping f0 within 1% and Q
-          within 5%.  Writes results/behav_sweep.csv and results/summary
+          within 5%.  Writes results/data/behav_sweep.csv and results/behavioral/behav_sweep.md
           lines to stdout.
   gain    LP passband gain at 0/6/12/18 dB for K = 100/Q = 5 and K = 25/Q = 1.
           Gain is applied only by the input-branch cap Cs1 = G*Cs, so the
           loop coefficients and therefore f0/Q stay unchanged.
-          Writes results/gain_test.{csv,md}.
+          Writes results/behavioral/gain_test.md and results/data/gain_test.csv.
 
   offset  5 mV input-referred op-amp offset, zero input: all 8 Q steps at
           K = 100, all Q <= 2 at K = 25 and K = 200, plus K = 25/Q = 5 and
           K = 200/Q = 5.  Each case is run at 0 dB and 18 dB and for
           same-sign and opposite-sign op-amp offsets.  Writes
-          results/offset_test.{csv,md}.
+          results/behavioral/offset_test.md and results/data/offset_test.csv.
 
   offset-opamp  worst offset settings at ideal, tt and ss op-amp parameters.
-          Writes results/offset_opamp.{csv,md}.
+          Writes results/behavioral/offset_opamp.md and results/data/offset_opamp.csv.
 
   qcheck  absolute and differential Q error versus the same-case ideal
-          baseline at the real tt/ss corners.  Writes results/qcheck.{csv,md}.
+          baseline at the real tt/ss corners.  Writes results/data/qcheck.csv and the qcheck section fragment.
           The separate q2_check.py extends this to the 18 dB Q<=2 row.
 
 Runtime: ~10-20 s per ngspice run; the full behavioral set is several
@@ -49,6 +49,9 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..', '..'))
 RESULTS = os.path.join(REPO, 'results')
+BEHAVIORAL = os.path.join(RESULTS, 'behavioral')
+DATA = os.path.join(RESULTS, 'data')
+OPAMP = os.path.join(RESULTS, 'opamp')
 TEMPLATE = os.path.join(HERE, 'biquad_behav.spice')
 
 sys.path.insert(0, os.path.join(HERE, '..'))
@@ -224,7 +227,8 @@ def case_step(K, Q, A0, GBW, SR, ron, fclk=500e3, CI=8.0, amp=0.05,
 
 def mode_sweep():
     """A0 x GBW requirement grid at 0 and 18 dB for three worst cases."""
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(BEHAVIORAL, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     rows = []
     cases = (
         dict(K=100, Q=5.0, fclk=500e3, tstop=2.5e-3),
@@ -273,14 +277,14 @@ def mode_sweep():
             'gain_set', 'A0_dB', 'GBW_MHz', 'SR_MVs', 'Ron_k', 'fclk',
             'CI_pF', 'amp', 'f0_kHz', 'f0_err_pct', 'Q_ext', 'Q_err_pct',
             'Q_base', 'Q_diff_pct', 'gain', 'gain_ideal', 'gain_err_db']
-    with open(os.path.join(RESULTS, 'behav_sweep.csv'), 'w', newline='') as f:
+    with open(os.path.join(DATA, 'behav_sweep.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         for r in rows:
             w.writerow({c: r.get(c, '') for c in w.fieldnames})
 
     write_sweep_markdown(rows, cases, gains, gbws)
-    print(f"wrote results/behav_sweep.{{csv,md}} ({len(rows)} rows)", flush=True)
+    print(f"wrote results/behavioral/behav_sweep.md and results/data/behav_sweep.csv ({len(rows)} rows)", flush=True)
 
 
 # ------------------------------------------------------------ mode: gain
@@ -337,7 +341,7 @@ def write_sweep_markdown(rows, cases, gains, gbws):
 
     # Transistor-level corner comparison (tb_ac table only).
     corners = []
-    cop = os.path.join(RESULTS, 'opamp_corners.md')
+    cop = os.path.join(OPAMP, 'opamp_corners.md')
     if os.path.exists(cop):
         in_ac = False
         for line in open(cop):
@@ -356,7 +360,7 @@ def write_sweep_markdown(rows, cases, gains, gbws):
                     except ValueError:
                         pass
 
-    mdp = os.path.join(RESULTS, 'behav_sweep.md')
+    mdp = os.path.join(BEHAVIORAL, 'behav_sweep.md')
     with open(mdp, 'w') as f:
         f.write('# Behavioral op-amp requirement sweep\n\n')
         f.write('Step response. Q error is the **difference versus the same-case ideal op-amp baseline (A0=80 dB, GBW=20 MHz)**, so extraction bias cancels. Pass limits: |Q_diff| <= 5 % for Q<=2 and <= 15 % for Q>2; f0 within 1 % (K<=100) or 1.5 % (K=200). SR = 5 V/us, '
@@ -389,11 +393,15 @@ def write_sweep_markdown(rows, cases, gains, gbws):
                        for r in k200_nom.values())
         if k200_bad:
             f.write('. The differential error exceeds 15 %; limiting K=200 '
-                    'to Q<=4 is a proposed change (see results/qcheck.md).\n\n')
+                    'to Q<=4 is a proposed change (see results/behavioral/q_evidence.md).\n\n')
         else:
             f.write('. These are inside the 15 % differential Q limit for '
                     'Q>2; the absolute Q residual remains inside the max '
-                    '+/-20 % budget.\n\n')
+                    '+/-20 % budget. The absolute K=200/Q=5 residual comes '
+                    'from the step-ring extractor; the multisine cross-check '
+                    'in results/behavioral/q_evidence.md section (c) gives '
+                    '+0.5 % and does not confirm it. Treat it as an extraction '
+                    'artifact pending transistor-level measurement.\n\n')
         if req_gbw is not None:
             f.write(f'**Op-amp requirement (all three cases, both gains, '
                     f'differential-Q limits): A0 >= {req_a0:.0f} dB and '
@@ -411,13 +419,14 @@ def write_sweep_markdown(rows, cases, gains, gbws):
                         f"{c['PM']:.1f} | {'PASS' if ok else 'FAIL'} |\n")
         f.write('\nThe transistor-level op-amp also has a separate 50 dB '
                 'minimum A0 bar and an 80 dB gain target; see '
-                'results/opamp_corners.md and results/spec_check.md.\n')
+                'results/opamp/opamp_corners.md and results/spec_check.md.\n')
 
 
 
 def mode_gain():
     """LP passband gain at four settings, with ideal/tt/ss op-amp parameters."""
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(BEHAVIORAL, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     rows = []
     cases = (
         dict(K=100, Q=5.0, fclk=500e3, tstop=2.5e-3),
@@ -445,12 +454,12 @@ def mode_gain():
                       f"Qerr={row['Q_err_pct']:+.2f}%)", flush=True)
     keys = ['opamp', 'K', 'Q', 'gain_db', 'gain_set', 'fclk', 'gain',
             'gain_ideal', 'gain_err_db', 'f0_err_pct', 'Q_err_pct', 'tag']
-    with open(os.path.join(RESULTS, 'gain_test.csv'), 'w', newline='') as f:
+    with open(os.path.join(DATA, 'gain_test.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         for r in rows:
             w.writerow({c: r.get(c, '') for c in w.fieldnames})
-    with open(os.path.join(RESULTS, 'gain_test.md'), 'w') as f:
+    with open(os.path.join(BEHAVIORAL, 'gain_test.md'), 'w') as f:
         f.write('# LP gain-error test\n\n')
         f.write('Behavioral biquad, gain applied only by the input-branch '
                 'capacitor Cs1 = G*Cs (Cs2, Cs3, Cd and CI unchanged). '
@@ -484,7 +493,7 @@ def mode_gain():
         f.write('\n`fit fail` means the step-ringing f0/Q extractor did not '
                 'converge for that run; the gain error is still measured from '
                 'the settled LP tail.\n')
-    print(f"wrote results/gain_test.{{csv,md}} ({len(rows)} rows)", flush=True)
+    print(f"wrote results/behavioral/gain_test.md and results/data/gain_test.csv ({len(rows)} rows)", flush=True)
 
 
 # ------------------------------------------------------------ mode: offset
@@ -533,7 +542,8 @@ def case_offset(K, Q, vos, fclk=500e3, CI=8.0, gain=1.0, vos2=None,
 
 
 def mode_offset():
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(BEHAVIORAL, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     rows = []
     cases = [(100, q) for q in QS]
     cases += [(K, q) for K in (25, 200) for q in QS if q <= 2.0]
@@ -552,7 +562,7 @@ def mode_offset():
                       f"{r.get('worst_mV', float('nan')):.1f} mV", flush=True)
     keys = ['K', 'Q', 'gain_db', 'gain_set', 'vos', 'vos2', 'status',
             'n_settle', 'rail', 'lp_offset', 'bp_offset', 'worst_mV']
-    with open(os.path.join(RESULTS, 'offset_test.csv'), 'w', newline='') as f:
+    with open(os.path.join(DATA, 'offset_test.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         for r in rows:
@@ -560,7 +570,7 @@ def mode_offset():
     ok = [r for r in rows if r.get('status') == 'ok']
     rails = [r for r in rows if r.get('status') == 'rail']
     qle2_0db = [r for r in ok if r['Q'] <= 2.0 and r['gain_db'] == 0.0]
-    with open(os.path.join(RESULTS, 'offset_test.md'), 'w') as f:
+    with open(os.path.join(BEHAVIORAL, 'offset_test.md'), 'w') as f:
         f.write('# Offset test - 5 mV input-referred op-amp offset\n\n')
         f.write('Behavioral biquad (ideal switches), zero differential input, '
                 'fclk = 500 kHz, A0 = 60 dB (deck default), GBW = 10 MHz. '
@@ -568,7 +578,7 @@ def mode_offset():
                 '(+5,+5) mV and opposite-sign is (+5,-5) mV. Gain is the '
                 'input-branch cap Cs1 = G*Cs (G = 1 and 7.94, i.e. 0 and '
                 '18 dB). Real tt/ss worst cases are in '
-                'results/offset_opamp.md. [SIM]\n\n')
+                'results/behavioral/offset_opamp.md. [SIM]\n\n')
         f.write('`rail` is 1 when the settled differential output exceeded '
                 '+/-1.55 V; such a row is invalid and is excluded from the '
                 'worst-case summary. No row is silently clipped.\n\n')
@@ -594,13 +604,14 @@ def mode_offset():
         if rails:
             f.write(f"\n**{len(rails)} rail-limited row(s)** are marked "
                     'invalid above and excluded from the summaries.\n')
-    print(f"wrote results/offset_test.{{csv,md}} "
+    print(f"wrote results/behavioral/offset_test.md and results/data/offset_test.csv "
           f'({len(ok)} ok / {len(rows)} runs, {len(rails)} rail)', flush=True)
 
 
 def mode_offset_opamp():
     """Worst offset cases with ideal, tt and ss op-amp parameters."""
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(BEHAVIORAL, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     rows = []
     cases = ((200, 2 ** 0.5), (200, 5.0), (25, 5.0))
     opamps = (
@@ -628,12 +639,12 @@ def mode_offset_opamp():
     keys = ['opamp', 'K', 'Q', 'gain_db', 'gain_set', 'vos', 'vos2',
             'status', 'n_settle', 'rail', 'lp_offset', 'bp_offset',
             'worst_mV']
-    with open(os.path.join(RESULTS, 'offset_opamp.csv'), 'w', newline='') as f:
+    with open(os.path.join(DATA, 'offset_opamp.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         for r in rows:
             w.writerow({c: r.get(c, '') for c in w.fieldnames})
-    with open(os.path.join(RESULTS, 'offset_opamp.md'), 'w') as f:
+    with open(os.path.join(BEHAVIORAL, 'offset_opamp.md'), 'w') as f:
         f.write('# Worst offset cases with real op-amp parameters\n\n')
         f.write('Behavioral biquad, 5 mV op-amp input offset on both '
                 'amplifiers, same sign (+5,+5) and opposite sign (+5,-5) mV, '
@@ -660,13 +671,14 @@ def mode_offset_opamp():
                 f.write(f"- {oname}: **{m['worst_mV']:.1f} mV** "
                         f"(K={m['K']}, Q={m['Q']:g}, {m['gain_db']:.0f} dB, "
                         f"VOS=({m['vos'] * 1e3:+.0f},{m['vos2'] * 1e3:+.0f}) mV)\n")
-    print(f"wrote results/offset_opamp.{{csv,md}} ({len(rows)} rows)",
+    print(f"wrote results/behavioral/offset_opamp.md and results/data/offset_opamp.csv ({len(rows)} rows)",
           flush=True)
 
 
 def mode_qcheck():
     """Absolute and differential Q error for the real op-amp corners."""
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(BEHAVIORAL, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     cases = ((200, 5.0), (100, 5.0), (25, 1.0), (200, 2.0),
              (25, 2.0), (200, 4.0))
     gains = ((0.0, 1.0), (18.0, 7.94))
@@ -707,13 +719,13 @@ def mode_qcheck():
     keys = ['case', 'K', 'Q', 'gain_db', 'opamp', 'A0_dB', 'GBW_MHz',
             'Q_ext', 'Q_abs_err_pct', 'Q_base', 'Q_diff_err_pct',
             'f0_err_pct', 'fit_ok']
-    with open(os.path.join(RESULTS, 'qcheck.csv'), 'w', newline='') as f:
+    with open(os.path.join(DATA, 'qcheck.csv'), 'w', newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         for r in rows:
             w.writerow({c: r.get(c, '') for c in w.fieldnames})
-    with open(os.path.join(RESULTS, 'qcheck.md'), 'w') as f:
-        f.write('# Q evidence: absolute and differential errors\n\n')
+    with open(os.path.join(DATA, 'qcheck.fragment.md'), 'w') as f:
+        f.write('## (a) Real op-amp corners: absolute and differential Q error\n\n')
         f.write('Same step-ring extraction for every run. Differential Q error '
                 'is `(Q_real - Q_ideal)/Q_ideal` with the same-case ideal '
                 'baseline at **A0=80 dB, GBW=20 MHz**. This cancels the '
@@ -751,12 +763,13 @@ def mode_qcheck():
             f.write(f'For reference, K=200/Q=4 differential Q worst is '
                     f'**{worst4:.2f} %**.\n')
         f.write('\nThe Q<=2 rows at 18 dB use the 50/49 dB transistor-corner '
-                'parameters. A targeted A0/GBW sweep in results/q2check.md '
+                'parameters. A targeted A0/GBW sweep in results/behavioral/q_evidence.md '
+                'section (b) '
                 'shows that A0=60 dB brings the worst Q<=2 differential error '
                 'inside 5 % (GBW has little effect), so the existing A0>=60 dB '
                 'requirement covers this row; no separate Q<=2 relaxation is '
                 'needed.\n')
-    print(f"wrote results/qcheck.{{csv,md}} ({len(rows)} rows)", flush=True)
+    print(f"wrote results/data/qcheck.csv and the qcheck fragment ({len(rows)} rows)", flush=True)
 
 
 def main():

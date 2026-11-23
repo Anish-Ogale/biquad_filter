@@ -8,7 +8,7 @@ script makes them reproducible:
   - cap budget / f0 / Q figures use the exact z-domain table written by
     sim/capbudget.py (regenerated automatically if the CSV is missing);
   - the step-response figure runs the PDK-free behavioral deck;
-  - the offset figure uses results/offset_test.csv from
+  - the offset figure uses results/data/offset_test.csv from
     `run_sweep.py --mode offset` (skipped with a warning if absent);
   - the op-amp Bode figure runs the Sky130 AC testbench at the three review
     corners when the PDK is available (skipped otherwise).
@@ -32,8 +32,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, '..'))
 RESULTS = os.path.join(REPO, 'results')
 PLOTS = os.path.join(RESULTS, 'plots')
-CAP_CSV = os.path.join(RESULTS, 'capbudget_table.csv')
-OFFSET_CSV = os.path.join(RESULTS, 'offset_test.csv')
+DATA = os.path.join(RESULTS, 'data')
+CAP_CSV = os.path.join(DATA, 'capbudget_table.csv')
+OFFSET_CSV = os.path.join(DATA, 'offset_test.csv')
 BEHAV = os.path.join(HERE, 'behavioral')
 OPAMP = os.path.join(REPO, 'design', 'opamp')
 
@@ -223,7 +224,7 @@ def plot_step_response():
 
 def plot_offset():
     if not os.path.exists(OFFSET_CSV):
-        print('WARNING: results/offset_test.csv not found; '
+        print('WARNING: results/data/offset_test.csv not found; '
               'keeping the committed offset figure (run '
               '`run_sweep.py --mode offset` first).', flush=True)
         return None, {}
@@ -457,7 +458,7 @@ def main():
                                                 info['worstall'])))
         print('wrote', path, flush=True)
     else:
-        skipped.append(('offset', 'results/offset_test.csv is absent'))
+        skipped.append(('offset', 'results/data/offset_test.csv is absent'))
     if args.skip_opamp:
         skipped.append(('op-amp Bode', 'requested by --skip-opamp'))
     else:

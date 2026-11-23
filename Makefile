@@ -36,6 +36,7 @@ behav:
 	$(PYTHON) sim/behavioral/run_sweep.py --mode offset-opamp
 	$(PYTHON) sim/behavioral/run_sweep.py --mode qcheck
 	$(PYTHON) sim/behavioral/q2_check.py
+	$(PYTHON) sim/behavioral/q_evidence.py
 	$(PYTHON) sim/behavioral/extract_f0_q.py
 
 opamp:
@@ -43,14 +44,17 @@ opamp:
 
 qcross:
 	$(PYTHON) sim/behavioral/q_crosscheck.py
+	$(PYTHON) sim/behavioral/q_evidence.py
 
 q2:
 	$(PYTHON) sim/behavioral/q2_check.py
+	$(PYTHON) sim/behavioral/q_evidence.py
 
 plots: cap
 	$(PYTHON) sim/plots.py
 
 clean:
-	rm -f sim/behavioral/*.dat sim/behavioral/*.gen.spice results/*.csv
+	rm -f sim/behavioral/*.dat sim/behavioral/*.gen.spice
+	rm -f results/data/*.fragment.md results/data/behav_tones.csv
 	rm -f design/opamp/*.gen.spice design/opamp/*.dat design/opamp/*.log
 	find . -name __pycache__ -type d -exec rm -rf {} +

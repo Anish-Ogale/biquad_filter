@@ -30,6 +30,6 @@ Targets in this proposal: A0 >= 50 dB minimum (80 dB goal), GBW >= 10 MHz
 (CL = 5 pF eff), PM >= 45 deg. tt/ff meet the 50 dB and 10 MHz bars;
 ss (49.0 dB, 7.82 MHz) misses both. The behavioral sweep at 18 dB gain
 requires A0 >= 60 dB and GBW >= 5 MHz, including the 18 dB Q<=2 row
-(results/q2check.md); all three transistor corners are below 60 dB A0.
+(results/behavioral/q_evidence.md section b); all three transistor corners are below 60 dB A0.
 System IDDA is tracked against the adopted 1.3 / 2.0 mA
 typ/max budget in results/spec_check.md.

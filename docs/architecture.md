@@ -82,7 +82,9 @@ Reference table (CI = 8 pF; see `results/capbudget_table.md` for all 32 rows):
 
 ## 3. Switch network (double-plate, mandatory)
 
-Every input branch capacitor has **both plates switched**:
+Every input branch capacitor has **both plates switched**. The input gain
+branch uses the same network with only its capacitance changed to
+`Cs1 = G*Cs` (G = 1, 2, 3.98, 7.94); Cs2, Cs3, Cd and CI are unchanged.
 
 | Phase | source-side plate | op-amp-side plate |
 |---|---|---|
@@ -123,26 +125,12 @@ number silently corrupts the phase).
 | VDDA / VSSA | 2 | supply | 3.3 V nominal (2.97–3.63), 5 V devices |
 | VDDD / VSSD | 2 | supply | 1.8 V nominal (1.62–1.98), digital only |
 
-## 6. Control-bit allocation (24 bits, proposal baseline)
+## 6. Control-bit allocation
 
-| Bits | Function | Values |
-|---:|---|---|
-| 2 | clock division K | 25, 50, 100, 200 |
-| 3 | Q | 0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0, 5.0 |
-| 2 | gain (input-branch cap Cs1 = G*Cs) | 0, 6, 12, 18 dB |
-| 2 | built-in test divider | fclk/64, /256, /1024, /4096 |
-| 1 | test input enable | on/off |
-| 1 | power-down | active low assumed |
-| 2 | Q trim, coarse (cap array) | ±2 steps |
-| 2 | f0 trim, coarse (cap array) | ±2 steps |
-| 4 | Q trim, fine | 1-of-16 unit weights |
-| 4 | f0 trim, fine | 1-of-16 unit weights |
-| 1 | bias/CMFB trim | select nominal/low-offset branch |
-| **24** | | |
-
-The sim-only prototype implements none of this: it uses ideal clocks and
-directly parameterized capacitor values. The 3-bit Q and 2-bit gain columns
-above are the arrays `sim/capbudget.py` prices.
+See `docs/io_and_controls.md` §3 for the single-source-of-truth control-bit
+allocation (17 of 24 bits used in this prototype). The sim-only prototype
+implemented here uses ideal clocks and directly parameterized capacitor
+values, not digital control logic.
 
 ## 7. Built-in test (BIT)
 
@@ -161,7 +149,7 @@ above are the arrays `sim/capbudget.py` prices.
 
 - Ideal 0/3.3 V clocks (5 % guard, 10 % early phase); no clock jitter.
 - Op-amp: PMOS-input two-stage Miller, algebraic CMFB (soft tanh clamp);
-  transistor-level characterization in `results/opamp_corners.md`.
+  transistor-level characterization in `results/opamp/opamp_corners.md`.
 - PDK mismatch is OFF in stock corners (MC_MM_SWITCH undefined; 5 V
   vth0_slope = 0). Offset/noise MC results add a manual Pelgrom Vth term and
   are labelled [SIM+MC-manual].

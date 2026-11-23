@@ -15,7 +15,7 @@ Step response. Q error is the **difference versus the same-case ideal op-amp bas
 
 `>80` means no A0 point in the tested grid met both the f0 and differential-Q limits at that GBW.
 
-At K=200/Q=5 and A0=80 dB / GBW=10 MHz: absolute Q -14.8 %, differential Q -0.0 % at 0 dB; absolute Q -15.1 %, differential Q -0.0 % at 18 dB. These are inside the 15 % differential Q limit for Q>2; the absolute Q residual remains inside the max +/-20 % budget.
+At K=200/Q=5 and A0=80 dB / GBW=10 MHz: absolute Q -14.8 %, differential Q -0.0 % at 0 dB; absolute Q -15.1 %, differential Q -0.0 % at 18 dB. These are inside the 15 % differential Q limit for Q>2; the absolute Q residual remains inside the max +/-20 % budget. The absolute K=200/Q=5 residual comes from the step-ring extractor; the multisine cross-check in results/behavioral/q_evidence.md section (c) gives +0.5 % and does not confirm it. Treat it as an extraction artifact pending transistor-level measurement.
 
 **Op-amp requirement (all three cases, both gains, differential-Q limits): A0 >= 60 dB and GBW >= 5 MHz.**
 
@@ -27,4 +27,4 @@ At K=200/Q=5 and A0=80 dB / GBW=10 MHz: absolute Q -14.8 %, differential Q -0.0 
 | ss_110C | 49.0 | 7.82 | 52.1 | FAIL |
 | ff_m40C | 50.5 | 13.94 | 61.6 | FAIL |
 
-The transistor-level op-amp also has a separate 50 dB minimum A0 bar and an 80 dB gain target; see results/opamp_corners.md and results/spec_check.md.
+The transistor-level op-amp also has a separate 50 dB minimum A0 bar and an 80 dB gain target; see results/opamp/opamp_corners.md and results/spec_check.md.

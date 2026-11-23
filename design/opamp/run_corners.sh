@@ -3,7 +3,7 @@
 # at the 3 review corners, both testbenches:
 #   tb_ac.spice   -> DC gain, GBW, phase margin, Idd
 #   tb_step.spice -> integrator step settling + output noise
-# Writes results/opamp_corners.md.
+# Writes results/opamp/opamp_corners.md.
 #
 # Requires ngspice on PATH and PDK_ROOT (default ~/.volare). PDK_ROOT may
 # point either to the directory containing sky130A or to sky130A itself.
@@ -12,6 +12,7 @@
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 RESULTS="$(cd "$HERE/../.." && pwd)/results"
+OUT="$RESULTS/opamp"
 PDK_ROOT="${PDK_ROOT:-$HOME/.volare}"
 PDK="${PDK:-sky130A}"
 if [ -f "$PDK_ROOT/libs.tech/ngspice/sky130.lib.spice" ]; then
@@ -26,7 +27,7 @@ fi
   exit 1
 }
 command -v ngspice >/dev/null || { echo "ERROR: ngspice not on PATH" >&2; exit 1; }
-mkdir -p "$RESULTS"
+mkdir -p "$OUT"
 
 # corner name | lib section | temp C | VDDA
 CORNERS='tt|tt|27.0|3.3
@@ -147,10 +148,10 @@ echo "Targets in this proposal: A0 >= 50 dB minimum (80 dB goal), GBW >= 10 MHz"
 echo "(CL = 5 pF eff), PM >= 45 deg. tt/ff meet the 50 dB and 10 MHz bars;"
 echo "ss (49.0 dB, 7.82 MHz) misses both. The behavioral sweep at 18 dB gain"
 echo "requires A0 >= 60 dB and GBW >= 5 MHz, including the 18 dB Q<=2 row"
-echo "(results/q2check.md); all three transistor corners are below 60 dB A0."
+echo "(results/behavioral/q_evidence.md section b); all three transistor corners are below 60 dB A0."
 echo "System IDDA is tracked against the adopted 1.3 / 2.0 mA"
 echo "typ/max budget in results/spec_check.md."
-} > "$RESULTS/opamp_corners.md"
+} > "$OUT/opamp_corners.md"
 
 rm -f "$HERE"/tb_*_*.gen.spice
-echo "done: results/opamp_corners.md"
+echo "done: results/opamp/opamp_corners.md"

@@ -11,7 +11,7 @@ A finite-A0 closed-form discrete-time model is not available in this
 prototype; the A0=80 dB/GBW=20 MHz run is the near-ideal numerical reference.
 
 Run:  python3 sim/behavioral/q_crosscheck.py
-Out:  results/q_crosscheck.{csv,md}
+Out:  results/data/q_crosscheck.csv, q_crosscheck.fragment.md
 """
 import csv
 import math
@@ -23,6 +23,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.abspath(os.path.join(HERE, '..', '..', 'results'))
+DATA = os.path.join(RESULTS, 'data')
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..'))
 
@@ -73,7 +74,7 @@ def multisine_run(K, Q, gain, tag):
 
 
 def main():
-    os.makedirs(RESULTS, exist_ok=True)
+    os.makedirs(DATA, exist_ok=True)
     out = []
     for K, Q, gdb, gain in SETTINGS:
         tag = f'xq_K{K}_Q{Q:g}_G{gdb:g}'
@@ -102,13 +103,13 @@ def main():
     keys = ['K', 'Q', 'gain_db', 'Q_target', 'Q_step', 'Q_multi',
             'Q_step_abs_err_pct', 'Q_multi_abs_err_pct',
             'Q_step_vs_multi_pct', 'f0_step_err_pct', 'f0_multi_err_pct']
-    with open(os.path.join(RESULTS, 'q_crosscheck.csv'), 'w',
+    with open(os.path.join(DATA, 'q_crosscheck.csv'), 'w',
               newline='') as f:
         w = csv.DictWriter(f, keys)
         w.writeheader()
         w.writerows(out)
-    with open(os.path.join(RESULTS, 'q_crosscheck.md'), 'w') as f:
-        f.write('# Step-ring versus multisine Q extraction\n\n')
+    with open(os.path.join(DATA, 'q_crosscheck.fragment.md'), 'w') as f:
+        f.write('## (c) Step-ring versus multisine Q extraction cross-check\n\n')
         f.write('Same behavioral deck, gain and ideal op-amp parameters '
                 '(A0=80 dB, GBW=20 MHz, SR=5 V/us, Ron=1 kohm, CI=8 pF). '
                 'The exact ideal discrete-time model target is the design Q. '
@@ -127,15 +128,16 @@ def main():
                     f"{r['Q_step_vs_multi_pct']:+.2f} | "
                     f"{r['f0_step_err_pct']:+.2f} | "
                     f"{r['f0_multi_err_pct']:+.2f} |\n")
+        f.write('\nThe K=200/Q=5 step-ring Q error in results/behavioral/q_evidence.md section (a) and results/behavioral/behav_sweep.md (about -15 %) is **not confirmed by the multisine method (+0.5 %)**. It is therefore likely a step-ring extraction artifact at K=200 (few clean ringing peaks) and must be re-measured at transistor level.\n')
         f.write('\nThe multisine fit is the more trustworthy Q method when '
                 'the record is long enough: it fits many coherent tones and '
                 'does not depend on peak detection. The step-ring fit is '
                 'faster but assumes a clean, single-mode decaying sinusoid; '
                 'it loses validity when the ringing has too few clean peaks '
                 'or the response is dominated by settling/slew. The K=25/Q=1 '
-                '18 dB ss step-ring run is marked `fit=0` in results/qcheck.md '
+                '18 dB ss step-ring run is marked `fit=0` in results/behavioral/q_evidence.md '
                 'for that reason; the multisine method is preferred there.\n')
-    print(f"wrote results/q_crosscheck.{{csv,md}} ({len(out)} settings)",
+    print(f"wrote results/data/q_crosscheck.csv and the q_crosscheck fragment ({len(out)} settings)",
           flush=True)
 
 
